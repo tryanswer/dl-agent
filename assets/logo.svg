@@ -1,0 +1,13 @@
+<svg width="960" height="320" viewBox="0 0 960 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">dl-agent logo</title>
+  <desc id="desc">A DriftLedger command mark with a ledger grid and agent prompt.</desc>
+  <rect width="960" height="320" rx="32" fill="#111713"/>
+  <path d="M0 80H960M0 160H960M0 240H960M160 0V320M320 0V320M480 0V320M640 0V320M800 0V320" stroke="#263026" stroke-width="1"/>
+  <rect x="80" y="72" width="176" height="176" rx="28" fill="#F3F0E7"/>
+  <path d="M126 130L166 160L126 190" stroke="#111713" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M178 190H218" stroke="#C8A75B" stroke-width="18" stroke-linecap="round"/>
+  <path d="M340 117H400C452 117 486 149 486 199C486 249 452 280 400 280H340V117ZM398 239C423 239 440 223 440 199C440 174 423 158 398 158H386V239H398Z" fill="#F3F0E7"/>
+  <path d="M513 109H558V280H513V109ZM590 117H636L711 205V117H757V280H711L636 192V280H590V117ZM790 117H880V158H836V181H874V220H836V239H884V280H790V117Z" fill="#F3F0E7"/>
+  <path d="M342 83H455" stroke="#C8A75B" stroke-width="10" stroke-linecap="round"/>
+  <text x="340" y="67" fill="#C8A75B" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="28" font-weight="700">AGENT CLI</text>
+</svg>

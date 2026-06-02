@@ -1,0 +1,48 @@
+{
+  "product": "driftledger",
+  "scenario": "merchant-payment-escrow-reconciliation",
+  "syntheticData": true,
+  "sourceCompanyDataIncluded": false,
+  "demoModelId": "DL_SYNTH_MERCHANT_ESCROW_001",
+  "modelVersion": "synthetic-v1",
+  "recordCount": 60,
+  "trainCount": 48,
+  "testCount": 12,
+  "anomalyCount": 1,
+  "generatedAt": "2026-06-02T00:00:00.000Z",
+  "businessFlows": [
+    "Merchant acquiring payment",
+    "Escrow hold after successful payment",
+    "Escrow release after buyer confirmation",
+    "Clearing and merchant settlement"
+  ],
+  "demoTables": [
+    "driftledger.merchant_order",
+    "driftledger.payment_order",
+    "driftledger.acquiring_transaction",
+    "driftledger.escrow_ledger",
+    "driftledger.escrow_release",
+    "driftledger.clearing_record",
+    "driftledger.settlement_record"
+  ],
+  "joinIntegrity": {
+    "anchor": "driftledger.payment_order#payment_id",
+    "preservedKeys": [
+      "driftledger.merchant_order#order_no = driftledger.payment_order#order_no",
+      "driftledger.payment_order#payment_id = driftledger.acquiring_transaction#payment_id",
+      "driftledger.payment_order#payment_id = driftledger.escrow_ledger#payment_id",
+      "driftledger.escrow_ledger#escrow_id = driftledger.escrow_release#escrow_id",
+      "driftledger.payment_order#payment_id = driftledger.clearing_record#payment_id",
+      "driftledger.clearing_record#settlement_batch_no = driftledger.settlement_record#settlement_batch_no",
+      "driftledger.clearing_record#merchant_id = driftledger.settlement_record#merchant_id"
+    ]
+  },
+  "privacy": {
+    "rawCompanyDataIncluded": false,
+    "notes": [
+      "All records are generated from deterministic synthetic business scenarios.",
+      "Identifiers use realistic merchant, order, payment, escrow, clearing, settlement, buyer, and seller formats.",
+      "No bank card numbers, phone numbers, personal addresses, identity numbers, or company source table names are included."
+    ]
+  }
+}

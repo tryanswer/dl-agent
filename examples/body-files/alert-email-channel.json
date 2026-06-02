@@ -1,0 +1,9 @@
+{
+  "displayName": "Finance incident inbox",
+  "channelType": "EMAIL",
+  "enabled": true,
+  "minSeverity": "HIGH",
+  "recipients": [
+    "finance-ops@example.com"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "spId": "<spId>",
+  "title": "Merchant payment escrow reconciliation",
+  "version": "synthetic-v1",
+  "riskLevel": "P1",
+  "modelType": "TM",
+  "checkerType": "DEFAULT",
+  "description": "Paid merchant orders must reconcile through acquiring capture, escrow hold/release, clearing, and merchant settlement by stable linkage keys and amount fields."
+}

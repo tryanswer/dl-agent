@@ -1,0 +1,8 @@
+{
+  "displayName": "Incident webhook",
+  "channelType": "WEBHOOK",
+  "enabled": true,
+  "minSeverity": "MEDIUM",
+  "webhookUrl": "https://example.com/driftledger-alerts",
+  "webhookSecret": "replace-with-shared-secret"
+}

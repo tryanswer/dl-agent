@@ -1,0 +1,36 @@
+{
+  "name": "dl-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent-facing command line and workflow assets for DriftLedger.",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm --workspace @driftledger/cli test",
+    "cli": "node packages/cli/bin/driftledger.js",
+    "doctor": "node packages/cli/bin/driftledger.js doctor",
+    "sync:samples": "node scripts/sync-demo-assets.mjs",
+    "verify:samples": "node scripts/verify-demo-assets.mjs",
+    "check": "npm test && npm run verify:samples"
+  },
+  "keywords": [
+    "driftledger",
+    "agent",
+    "cli",
+    "reconciliation",
+    "business-invariants"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tryanswer/dl-agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tryanswer/dl-agent/issues"
+  },
+  "homepage": "https://driftledger.fatclaw.com/cli",
+  "engines": {
+    "node": ">=20"
+  }
+}

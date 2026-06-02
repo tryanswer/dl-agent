@@ -1,0 +1,10 @@
+{
+  "displayName": "merchant payment escrow anomaly smoke",
+  "datasetId": "<anomalyAssembledDatasetId>",
+  "riskModelId": "<riskModelId>",
+  "ruleScope": "PUBLISHED",
+  "selectedRuleIds": [],
+  "executionOptions": {
+    "mode": "smoke"
+  }
+}

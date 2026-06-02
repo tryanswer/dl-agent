@@ -1,0 +1,48 @@
+{
+  "table": {
+    "spId": "<spId>",
+    "nodeName": "driftledger.payment_order",
+    "nodeType": "TABLE",
+    "riskLevel": "HIGH",
+    "appName": "driftledger-synthetic-demo",
+    "comment": "Synthetic merchant payment order export"
+  },
+  "fields": [
+    {
+      "fieldName": "payment_id",
+      "primaryKey": true,
+      "joinKey": true,
+      "types": ["STRING"]
+    },
+    {
+      "fieldName": "order_no",
+      "joinKey": true,
+      "types": ["STRING"]
+    },
+    {
+      "fieldName": "merchant_id",
+      "joinKey": true,
+      "types": ["STRING"]
+    },
+    {
+      "fieldName": "payment_status",
+      "riskLevel": "HIGH",
+      "types": ["STRING"]
+    },
+    {
+      "fieldName": "payment_amount",
+      "riskLevel": "HIGH",
+      "types": ["DECIMAL"]
+    },
+    {
+      "fieldName": "fee_amount",
+      "riskLevel": "HIGH",
+      "types": ["DECIMAL"]
+    },
+    {
+      "fieldName": "net_amount",
+      "riskLevel": "HIGH",
+      "types": ["DECIMAL"]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "riskModelId": "<riskModelId>",
+  "dataSetId": "<trainingAssembledDatasetId>",
+  "ruleSizePerRound": 1000,
+  "maxFilterComb": 3,
+  "enableBizScene": true,
+  "targetFieldRiskLevel": "HIGH",
+  "modelConfig": {
+    "limitBizScenes": [
+      {
+        "sceneId": "paid-merchant-escrow-settlement",
+        "features": [
+          {
+            "value": "driftledger.payment_order#payment_status = 'PAID'",
+            "level": "USER_SPECIFIED",
+            "dynamic": false,
+            "relation": false,
+            "option": false
+          }
+        ]
+      }
+    ]
+  },
+  "algoConfig": {
+    "minRuleHeadSupport": 0.1,
+    "minRuleSupport": 0.05,
+    "minConf": 1.0,
+    "minCover": 0.95,
+    "allowedErrorValue": 0
+  },
+  "dataParsingConfig": {
+    "maxDataSample": -1,
+    "dataSampleRate": 1.0,
+    "maxJoinDataSample": -1
+  },
+  "postDealConfig": {
+    "save2Final": true,
+    "extractFeatures": true,
+    "genReport": true,
+    "saveAsBaseline": false
+  },
+  "priority": 0
+}

@@ -1,0 +1,15 @@
+{
+  "metaTableId": "<paymentOrderMetaTableId>",
+  "dataSourceId": "<dataSourceId>",
+  "sourceName": "payment_order.csv",
+  "fieldMappings": {
+    "payment_id": "payment_id",
+    "order_no": "order_no",
+    "merchant_id": "merchant_id",
+    "payment_status": "payment_status",
+    "payment_amount": "payment_amount",
+    "fee_amount": "fee_amount",
+    "net_amount": "net_amount"
+  },
+  "primaryKeyFields": ["payment_id"]
+}

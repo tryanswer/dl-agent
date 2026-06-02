@@ -1,0 +1,10 @@
+{
+  "displayName": "merchant payment escrow assembly",
+  "inputDatasetIds": ["<rawDatasetId>"],
+  "riskModelId": "<riskModelId>",
+  "outputDatasetName": "merchant-payment-escrow-assembled",
+  "assemblyOptions": {
+    "anchor": "driftledger.payment_order",
+    "joinMode": "LEFT_PRESERVE"
+  }
+}
