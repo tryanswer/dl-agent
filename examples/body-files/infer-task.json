@@ -16,6 +16,20 @@
             "dynamic": false,
             "relation": false,
             "option": false
+          },
+          {
+            "value": "driftledger.clearing_record#clearing_status = 'CLEARED'",
+            "level": "USER_SPECIFIED",
+            "dynamic": false,
+            "relation": false,
+            "option": false
+          },
+          {
+            "value": "driftledger.settlement_record#settlement_status = 'SETTLED'",
+            "level": "USER_SPECIFIED",
+            "dynamic": false,
+            "relation": false,
+            "option": false
           }
         ]
       }

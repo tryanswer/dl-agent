@@ -351,7 +351,9 @@ dl assembly run --task <assemblyTaskId>
 merchant order paid through an acquiring flow, held in escrow, released after
 buyer confirmation, cleared, and settled to the merchant. DriftLedger assembles
 those source rows into one reconciliation record and checks that linkage keys,
-success statuses, fees, and money amounts remain consistent.
+success statuses, fees, and money amounts remain consistent. The training data
+also includes payment failures, buyer cancellations, pending buyer confirmation,
+and delayed clearing so trained rules can learn meaningful preconditions.
 
 ```mermaid
 flowchart LR
@@ -385,14 +387,14 @@ Data split:
 
 | File | Records | Purpose |
 | --- | ---: | --- |
-| `datasets/train.jsonl` | 48 | Clean assembled records for rule training. |
-| `datasets/test.jsonl` | 12 | Clean validation set. |
-| `datasets/test-with-anomaly.jsonl` | 12 | Validation set with one controlled amount mismatch. |
+| `datasets/train.jsonl` | 80 | Clean assembled records with success, failed, canceled, pending, and delayed status flows for rule training. |
+| `datasets/test.jsonl` | 24 | Clean validation set with the same status mix. |
+| `datasets/test-with-anomaly.jsonl` | 24 | Validation set with four controlled success-chain amount mismatches. |
 
-The anomaly fixture keeps all join keys intact and changes only
-`driftledger.settlement_record#settlement_amount` by `1.00` CNY so it no longer
-matches `driftledger.clearing_record#net_amount`. This should produce an
-incident when the settlement consistency rule is active.
+The anomaly fixture keeps all join keys intact and injects mismatches into
+acquiring capture amount, escrow release amount, clearing fee amount, and
+merchant settlement amount. These should produce incidents when success-chain
+rules are active.
 
 ## Generated Rule Candidates
 
@@ -401,18 +403,18 @@ from training on this fixture:
 
 | Rule | What it protects |
 | --- | --- |
-| `driftledger.payment_order#payment_amount = driftledger.acquiring_transaction#capture_amount WHERE driftledger.payment_order#payment_status = 'PAID'` | A paid order must be captured for the same amount. |
-| `driftledger.payment_order#payment_amount = driftledger.escrow_ledger#escrow_amount WHERE driftledger.escrow_ledger#escrow_status = 'HELD'` | The escrow hold must match the paid amount. |
-| `driftledger.escrow_ledger#escrow_amount = driftledger.escrow_release#release_amount WHERE driftledger.escrow_release#release_status = 'RELEASED'` | Buyer-confirmed release must release the held amount. |
-| `driftledger.payment_order#net_amount = driftledger.clearing_record#net_amount WHERE driftledger.clearing_record#clearing_status = 'CLEARED'` | Clearing net amount must reflect payment amount minus fee. |
-| `driftledger.clearing_record#net_amount = driftledger.settlement_record#settlement_amount WHERE driftledger.clearing_record#clearing_status = 'CLEARED'` | Merchant settlement must pay the cleared net amount. |
+| `driftledger.payment_order#payment_amount = driftledger.acquiring_transaction#capture_amount WHERE driftledger.payment_order#payment_status = 'PAID' AND driftledger.acquiring_transaction#acquiring_status = 'CAPTURED'` | A paid and captured order must be captured for the same amount. |
+| `driftledger.payment_order#payment_amount = driftledger.escrow_ledger#escrow_amount WHERE driftledger.payment_order#payment_status = 'PAID' AND driftledger.escrow_ledger#escrow_status = 'HELD'` | A paid order held in escrow must hold the paid amount. |
+| `driftledger.escrow_ledger#escrow_amount = driftledger.escrow_release#release_amount WHERE driftledger.escrow_ledger#escrow_status = 'HELD' AND driftledger.escrow_release#release_status = 'RELEASED'` | Buyer-confirmed release must release the held amount. |
+| `driftledger.payment_order#fee_amount = driftledger.clearing_record#fee_amount WHERE driftledger.payment_order#payment_status = 'PAID' AND driftledger.clearing_record#clearing_status = 'CLEARED'` | Clearing fee must match the payment fee. |
+| `driftledger.clearing_record#net_amount = driftledger.settlement_record#settlement_amount WHERE driftledger.clearing_record#clearing_status = 'CLEARED' AND driftledger.settlement_record#settlement_status = 'SETTLED'` | Merchant settlement must pay the cleared net amount. |
 
 The checked-in `examples/body-files/rule.json` uses the settlement rule because
 `datasets/test-with-anomaly.jsonl` is built to fail it deterministically.
 
 ## Sample Assets
 
-Sanitized demo assets live under:
+Synthetic demo assets live under:
 
 ```text
 samples/merchant-payment-escrow-reconciliation
@@ -422,7 +424,7 @@ Files:
 
 - `datasets/train.jsonl`: clean assembled records for rule training.
 - `datasets/test.jsonl`: clean assembled records for validation.
-- `datasets/test-with-anomaly.jsonl`: controlled amount mismatch for incident verification.
+- `datasets/test-with-anomaly.jsonl`: controlled success-chain mismatches for incident verification.
 - `models/demo_model.jsonl`: synthetic reconciliation model for the same scenario.
 - `manifest.json`: fixture metadata, scenario name, counts, and privacy notes.
 - `README.md`: dataset-local scenario notes and privacy guard details.
@@ -503,7 +505,7 @@ dl-agent/
       datasets/
         train.jsonl              clean assembled records for training
         test.jsonl               clean assembled records for validation
-        test-with-anomaly.jsonl  validation records with one controlled mismatch
+        test-with-anomaly.jsonl  validation records with four controlled mismatches
       models/
         demo_model.jsonl         synthetic reconciliation model
       manifest.json              sample metadata and privacy notes

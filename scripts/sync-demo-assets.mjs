@@ -36,6 +36,130 @@ const orderAmounts = [
   22880, 11200, 5300, 17420, 8600, 29990, 13850, 7200, 24600, 9350,
 ];
 
+const scenarioProfiles = [
+  {
+    code: 'CARD_GOODS_ESCROW_RELEASED',
+    description: 'Card acquiring payment for physical goods after delivery confirmation',
+    paymentMethod: 'CARD',
+    orderStatus: 'PAID',
+    paymentStatus: 'PAID',
+    acquiringStatus: 'CAPTURED',
+    escrowStatus: 'HELD',
+    releaseStatus: 'RELEASED',
+    clearingStatus: 'CLEARED',
+    settlementStatus: 'SETTLED',
+    captured: true,
+    held: true,
+    released: true,
+    cleared: true,
+    settled: true,
+  },
+  {
+    code: 'WALLET_DIGITAL_SERVICE_RELEASED',
+    description: 'Wallet payment for digital service with instant buyer confirmation',
+    paymentMethod: 'WALLET',
+    orderStatus: 'PAID',
+    paymentStatus: 'PAID',
+    acquiringStatus: 'CAPTURED',
+    escrowStatus: 'HELD',
+    releaseStatus: 'RELEASED',
+    clearingStatus: 'CLEARED',
+    settlementStatus: 'SETTLED',
+    captured: true,
+    held: true,
+    released: true,
+    cleared: true,
+    settled: true,
+  },
+  {
+    code: 'BANK_TRANSFER_B2B_ESCROW_RELEASED',
+    description: 'Bank transfer payment for B2B order released after acceptance',
+    paymentMethod: 'BANK_TRANSFER',
+    orderStatus: 'PAID',
+    paymentStatus: 'PAID',
+    acquiringStatus: 'CAPTURED',
+    escrowStatus: 'HELD',
+    releaseStatus: 'RELEASED',
+    clearingStatus: 'CLEARED',
+    settlementStatus: 'SETTLED',
+    captured: true,
+    held: true,
+    released: true,
+    cleared: true,
+    settled: true,
+  },
+  {
+    code: 'CARD_AUTHORIZATION_FAILED',
+    description: 'Card acquiring payment rejected before capture',
+    paymentMethod: 'CARD',
+    orderStatus: 'PAYMENT_FAILED',
+    paymentStatus: 'FAILED',
+    acquiringStatus: 'DECLINED',
+    escrowStatus: 'NOT_HELD',
+    releaseStatus: 'NOT_RELEASED',
+    clearingStatus: 'NOT_CLEARED',
+    settlementStatus: 'NOT_SETTLED',
+    captured: false,
+    held: false,
+    released: false,
+    cleared: false,
+    settled: false,
+  },
+  {
+    code: 'BUYER_CANCELLED_BEFORE_CAPTURE',
+    description: 'Buyer cancels order before payment capture',
+    paymentMethod: 'WALLET',
+    orderStatus: 'CANCELED',
+    paymentStatus: 'CANCELED',
+    acquiringStatus: 'CANCELED',
+    escrowStatus: 'NOT_HELD',
+    releaseStatus: 'NOT_RELEASED',
+    clearingStatus: 'NOT_CLEARED',
+    settlementStatus: 'NOT_SETTLED',
+    captured: false,
+    held: false,
+    released: false,
+    cleared: false,
+    settled: false,
+  },
+  {
+    code: 'ESCROW_AWAITING_BUYER_CONFIRMATION',
+    description: 'Payment captured and held in escrow before buyer confirmation',
+    paymentMethod: 'CARD',
+    orderStatus: 'AWAITING_CONFIRMATION',
+    paymentStatus: 'PAID',
+    acquiringStatus: 'CAPTURED',
+    escrowStatus: 'HELD',
+    releaseStatus: 'PENDING_CONFIRMATION',
+    clearingStatus: 'PENDING',
+    settlementStatus: 'PENDING',
+    captured: true,
+    held: true,
+    released: false,
+    cleared: false,
+    settled: false,
+  },
+  {
+    code: 'CLEARING_DELAYED_AFTER_RELEASE',
+    description: 'Escrow released but clearing and merchant settlement are delayed',
+    paymentMethod: 'BANK_TRANSFER',
+    orderStatus: 'RELEASED',
+    paymentStatus: 'PAID',
+    acquiringStatus: 'CAPTURED',
+    escrowStatus: 'HELD',
+    releaseStatus: 'RELEASED',
+    clearingStatus: 'PENDING',
+    settlementStatus: 'PENDING',
+    captured: true,
+    held: true,
+    released: true,
+    cleared: false,
+    settled: false,
+  },
+];
+
+const profilePlan = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 0, 5];
+
 function pad(value, size = 4) {
   return String(value).padStart(size, '0');
 }
@@ -45,7 +169,8 @@ function money(cents) {
 }
 
 function minutesAt(day, index, offsetMinutes = 0) {
-  const hour = 9 + Math.floor(index / 4);
+  const localIndex = index % 24;
+  const hour = 9 + Math.floor(localIndex / 4);
   const minute = (index * 7 + offsetMinutes) % 60;
   const second = (index * 13 + offsetMinutes) % 60;
   return `2026-06-${pad(day, 2)} ${pad(hour, 2)}:${pad(minute, 2)}:${pad(second, 2)}`;
@@ -63,12 +188,28 @@ function row(table, pk, dataMap) {
   };
 }
 
-function buildRecord(index, split) {
-  const day = split === 'train' ? 2 + Math.floor(index / 12) : 8 + Math.floor(index / 6);
+function scenarioProfile(index) {
+  return scenarioProfiles[profilePlan[index % profilePlan.length]];
+}
+
+function buildRecord(index, split, splitIndex = index) {
+  const day = split === 'train' ? 2 + Math.floor(splitIndex / 12) : 12 + Math.floor(splitIndex / 6);
   const merchant = merchants[index % merchants.length];
+  const profile = scenarioProfile(splitIndex);
   const amountCents = orderAmounts[index % orderAmounts.length] + Math.floor(index / orderAmounts.length) * 310;
   const fee = feeCents(amountCents, merchant.feeBps);
   const net = amountCents - fee;
+  const capturedAmountCents = profile.captured ? amountCents : 0;
+  const capturedFeeCents = profile.captured ? fee : 0;
+  const capturedNetCents = profile.captured ? net : 0;
+  const escrowAmountCents = profile.held ? amountCents : 0;
+  const releaseAmountCents = profile.released ? amountCents : 0;
+  const clearingAmountCents = profile.cleared ? amountCents : 0;
+  const clearingFeeCents = profile.cleared ? fee : 0;
+  const clearingNetCents = profile.cleared ? net : 0;
+  const settlementGrossCents = profile.settled ? amountCents : 0;
+  const settlementFeeCents = profile.settled ? fee : 0;
+  const settlementCents = profile.settled ? net : 0;
   const suffix = pad(index + 1);
   const orderNo = `ORD-2026-06-${pad(day, 2)}-${suffix}`;
   const paymentId = `PAY-2026-06-${pad(day, 2)}-${suffix}`;
@@ -76,33 +217,36 @@ function buildRecord(index, split) {
   const escrowId = `ESC-2026-06-${pad(day, 2)}-${suffix}`;
   const releaseId = `REL-2026-06-${pad(day, 2)}-${suffix}`;
   const clearingRefNo = `CLR-2026-06-${pad(day, 2)}-${suffix}`;
-  const settlementBatchNo = `SET-2026-06-${pad(day, 2)}-${pad(Math.floor(index / 6) + 1, 3)}`;
+  const settlementBatchNo = `SET-2026-06-${pad(day, 2)}-${pad(Math.floor(splitIndex / 6) + 1, 3)}`;
   const buyerAccountId = `BUYER-ACCT-2026-${pad((index % 30) + 1)}`;
   const sellerAccountId = `SELLER-ACCT-2026-${pad((index % 12) + 1)}`;
   const platformEscrowAccountId = 'PLAT-ACCT-ESCROW-CNY';
-  const createdAt = minutesAt(day, index);
-  const paidAt = minutesAt(day, index, 3);
-  const confirmedAt = minutesAt(day + 1, index, 11);
-  const clearedAt = minutesAt(day + 1, index, 17);
-  const settledAt = minutesAt(day + 2, index, 23);
+  const createdAt = minutesAt(day, splitIndex);
+  const paidAt = minutesAt(day, splitIndex, 3);
+  const confirmedAt = minutesAt(day + 1, splitIndex, 11);
+  const clearedAt = minutesAt(day + 1, splitIndex, 17);
+  const settledAt = minutesAt(day + 2, splitIndex, 23);
 
   return {
     empty: false,
     modelId,
     recordId: `REC-2026-06-${pad(day, 2)}-${suffix}`,
-    scenario: index % 2 === 0 ? 'ACQUIRING_PAYMENT' : 'ESCROW_TRADE_RELEASE',
+    scenario: profile.code,
+    scenarioDescription: profile.description,
     records: [],
     tableDataMap: {
       [tables.merchantOrder]: [
         row(tables.merchantOrder, orderNo, {
           order_no: orderNo,
+          business_scene: profile.code,
+          scenario_description: profile.description,
           merchant_id: merchant.id,
           merchant_label: merchant.label,
           buyer_account_id: buyerAccountId,
           seller_account_id: sellerAccountId,
           order_amount: money(amountCents),
           currency: 'CNY',
-          order_status: 'PAID',
+          order_status: profile.orderStatus,
           created_at: createdAt,
         }),
       ],
@@ -110,14 +254,16 @@ function buildRecord(index, split) {
         row(tables.paymentOrder, paymentId, {
           payment_id: paymentId,
           order_no: orderNo,
+          business_scene: profile.code,
+          scenario_description: profile.description,
           merchant_id: merchant.id,
           buyer_account_id: buyerAccountId,
           payment_amount: money(amountCents),
-          fee_amount: money(fee),
-          net_amount: money(net),
+          fee_amount: money(capturedFeeCents),
+          net_amount: money(capturedNetCents),
           currency: 'CNY',
-          payment_method: index % 3 === 0 ? 'CARD' : index % 3 === 1 ? 'WALLET' : 'BANK_TRANSFER',
-          payment_status: 'PAID',
+          payment_method: profile.paymentMethod,
+          payment_status: profile.paymentStatus,
           paid_at: paidAt,
         }),
       ],
@@ -125,12 +271,13 @@ function buildRecord(index, split) {
         row(tables.acquiringTransaction, acquiringId, {
           acquiring_id: acquiringId,
           payment_id: paymentId,
+          business_scene: profile.code,
           merchant_id: merchant.id,
-          capture_amount: money(amountCents),
-          fee_amount: money(fee),
-          net_amount: money(net),
+          capture_amount: money(capturedAmountCents),
+          fee_amount: money(capturedFeeCents),
+          net_amount: money(capturedNetCents),
           currency: 'CNY',
-          acquiring_status: 'CAPTURED',
+          acquiring_status: profile.acquiringStatus,
           captured_at: paidAt,
         }),
       ],
@@ -139,12 +286,13 @@ function buildRecord(index, split) {
           escrow_id: escrowId,
           payment_id: paymentId,
           order_no: orderNo,
+          business_scene: profile.code,
           buyer_account_id: buyerAccountId,
           seller_account_id: sellerAccountId,
           platform_escrow_account_id: platformEscrowAccountId,
-          escrow_amount: money(amountCents),
+          escrow_amount: money(escrowAmountCents),
           currency: 'CNY',
-          escrow_status: 'HELD',
+          escrow_status: profile.escrowStatus,
           held_at: paidAt,
         }),
       ],
@@ -153,10 +301,11 @@ function buildRecord(index, split) {
           release_id: releaseId,
           escrow_id: escrowId,
           order_no: orderNo,
+          business_scene: profile.code,
           seller_account_id: sellerAccountId,
-          release_amount: money(amountCents),
+          release_amount: money(releaseAmountCents),
           currency: 'CNY',
-          release_status: 'RELEASED',
+          release_status: profile.releaseStatus,
           confirmed_at: confirmedAt,
         }),
       ],
@@ -166,12 +315,13 @@ function buildRecord(index, split) {
           payment_id: paymentId,
           acquiring_id: acquiringId,
           settlement_batch_no: settlementBatchNo,
+          business_scene: profile.code,
           merchant_id: merchant.id,
-          clearing_amount: money(amountCents),
-          fee_amount: money(fee),
-          net_amount: money(net),
+          clearing_amount: money(clearingAmountCents),
+          fee_amount: money(clearingFeeCents),
+          net_amount: money(clearingNetCents),
           currency: 'CNY',
-          clearing_status: 'CLEARED',
+          clearing_status: profile.clearingStatus,
           cleared_at: clearedAt,
         }),
       ],
@@ -179,12 +329,13 @@ function buildRecord(index, split) {
         row(tables.settlementRecord, `${settlementBatchNo}-${merchant.id}`, {
           settlement_batch_no: settlementBatchNo,
           merchant_id: merchant.id,
+          business_scene: profile.code,
           seller_account_id: sellerAccountId,
-          gross_amount: money(amountCents),
-          fee_amount: money(fee),
-          settlement_amount: money(net),
+          gross_amount: money(settlementGrossCents),
+          fee_amount: money(settlementFeeCents),
+          settlement_amount: money(settlementCents),
           currency: 'CNY',
-          settlement_status: 'SETTLED',
+          settlement_status: profile.settlementStatus,
           settled_at: settledAt,
         }),
       ],
@@ -196,23 +347,67 @@ function cloneRecord(record) {
   return JSON.parse(JSON.stringify(record));
 }
 
-function withAnomaly(record) {
+function withAnomaly(record, type) {
   const anomaly = cloneRecord(record);
   anomaly.recordId = `${record.recordId}-ANOMALY`;
+  const preservedJoinKeys = [
+    `${tables.merchantOrder}#order_no`,
+    `${tables.paymentOrder}#order_no`,
+    `${tables.paymentOrder}#payment_id`,
+    `${tables.acquiringTransaction}#payment_id`,
+    `${tables.escrowLedger}#payment_id`,
+    `${tables.escrowLedger}#escrow_id`,
+    `${tables.escrowRelease}#escrow_id`,
+    `${tables.clearingRecord}#payment_id`,
+    `${tables.clearingRecord}#settlement_batch_no`,
+    `${tables.settlementRecord}#settlement_batch_no`,
+    `${tables.settlementRecord}#merchant_id`,
+  ];
+
+  if (type === 'ACQUIRING_CAPTURE_AMOUNT_MISMATCH') {
+    const rowData = anomaly.tableDataMap[tables.acquiringTransaction][0].dataMap;
+    rowData.capture_amount = money(Math.round(Number(rowData.capture_amount) * 100) + 200);
+    anomaly.anomaly = {
+      type,
+      reason: 'captured amount is 2.00 CNY higher than the paid amount',
+      changedField: `${tables.acquiringTransaction}#capture_amount`,
+      preservedJoinKeys,
+    };
+    return anomaly;
+  }
+
+  if (type === 'ESCROW_RELEASE_AMOUNT_MISMATCH') {
+    const rowData = anomaly.tableDataMap[tables.escrowRelease][0].dataMap;
+    rowData.release_amount = money(Math.round(Number(rowData.release_amount) * 100) - 300);
+    anomaly.anomaly = {
+      type,
+      reason: 'released escrow amount is 3.00 CNY lower than the held amount',
+      changedField: `${tables.escrowRelease}#release_amount`,
+      preservedJoinKeys,
+    };
+    return anomaly;
+  }
+
+  if (type === 'CLEARING_FEE_AMOUNT_MISMATCH') {
+    const rowData = anomaly.tableDataMap[tables.clearingRecord][0].dataMap;
+    rowData.fee_amount = money(Math.round(Number(rowData.fee_amount) * 100) + 50);
+    anomaly.anomaly = {
+      type,
+      reason: 'clearing fee is 0.50 CNY higher than payment fee',
+      changedField: `${tables.clearingRecord}#fee_amount`,
+      preservedJoinKeys,
+    };
+    return anomaly;
+  }
+
+  const settlementRow = anomaly.tableDataMap[tables.settlementRecord][0].dataMap;
+  settlementRow.settlement_amount = money(Math.round(Number(settlementRow.settlement_amount) * 100) + 100);
   anomaly.anomaly = {
     type: 'SETTLEMENT_AMOUNT_MISMATCH',
     reason: 'settlement amount is 1.00 CNY higher than clearing net amount',
     changedField: `${tables.settlementRecord}#settlement_amount`,
-    preservedJoinKeys: [
-      `${tables.paymentOrder}#payment_id`,
-      `${tables.clearingRecord}#payment_id`,
-      `${tables.clearingRecord}#settlement_batch_no`,
-      `${tables.settlementRecord}#settlement_batch_no`,
-      `${tables.settlementRecord}#merchant_id`,
-    ],
+    preservedJoinKeys,
   };
-  const settlementRow = anomaly.tableDataMap[tables.settlementRecord][0].dataMap;
-  settlementRow.settlement_amount = money(Math.round(Number(settlementRow.settlement_amount) * 100) + 100);
   return anomaly;
 }
 
@@ -231,9 +426,18 @@ function writeText(file, content) {
   fs.writeFileSync(file, content);
 }
 
-const trainRecords = Array.from({ length: 48 }, (_, index) => buildRecord(index, 'train'));
-const testRecords = Array.from({ length: 12 }, (_, index) => buildRecord(index + 48, 'test'));
-const anomalyRecords = testRecords.map((record, index) => (index === 3 ? withAnomaly(record) : cloneRecord(record)));
+const trainRecords = Array.from({ length: 80 }, (_, index) => buildRecord(index, 'train', index));
+const testRecords = Array.from({ length: 24 }, (_, index) => buildRecord(index + 120, 'test', index));
+const anomalyByIndex = new Map([
+  [0, 'ACQUIRING_CAPTURE_AMOUNT_MISMATCH'],
+  [1, 'ESCROW_RELEASE_AMOUNT_MISMATCH'],
+  [2, 'CLEARING_FEE_AMOUNT_MISMATCH'],
+  [7, 'SETTLEMENT_AMOUNT_MISMATCH'],
+]);
+const anomalyRecords = testRecords.map((record, index) => {
+  const anomalyType = anomalyByIndex.get(index);
+  return anomalyType ? withAnomaly(record, anomalyType) : cloneRecord(record);
+});
 
 const manifest = {
   product: 'driftledger',
@@ -249,10 +453,28 @@ const manifest = {
   generatedAt,
   businessFlows: [
     'Merchant acquiring payment',
+    'Payment failure and buyer cancellation',
     'Escrow hold after successful payment',
     'Escrow release after buyer confirmation',
+    'Escrow pending confirmation',
+    'Clearing delayed after release',
     'Clearing and merchant settlement',
   ],
+  scenarioProfiles: scenarioProfiles.map((profile) => ({
+    code: profile.code,
+    description: profile.description,
+    orderStatus: profile.orderStatus,
+    paymentStatus: profile.paymentStatus,
+    acquiringStatus: profile.acquiringStatus,
+    escrowStatus: profile.escrowStatus,
+    releaseStatus: profile.releaseStatus,
+    clearingStatus: profile.clearingStatus,
+    settlementStatus: profile.settlementStatus,
+  })),
+  controlledAnomalies: Array.from(anomalyByIndex.entries()).map(([index, type]) => ({
+    testRecordIndex: index,
+    type,
+  })),
   demoTables: Object.values(tables),
   joinIntegrity: {
     anchor: `${tables.paymentOrder}#payment_id`,
@@ -368,12 +590,21 @@ phone numbers, addresses, or identity documents.
 ## Business Flow
 
 1. A buyer creates a merchant order.
-2. The payment order captures the same amount.
-3. The acquiring transaction records the captured amount and fee.
-4. Escrow holds the paid amount until buyer confirmation.
-5. Escrow release pays the seller after confirmation.
-6. Clearing calculates merchant net amount.
-7. Settlement pays the merchant for the same batch and merchant key.
+2. The payment order can succeed, fail, be canceled, or wait for confirmation.
+3. Successful payments are captured by the acquiring transaction.
+4. Captured payments are held in escrow until buyer confirmation.
+5. Released escrow funds move into clearing and merchant settlement.
+6. Failed, canceled, pending-confirmation, and delayed-clearing rows keep the same join keys but should not satisfy success-only amount rules.
+
+## Scenario Profiles
+
+- \`CARD_GOODS_ESCROW_RELEASED\`: successful card payment, escrow release, clearing, and settlement.
+- \`WALLET_DIGITAL_SERVICE_RELEASED\`: successful wallet payment with instant confirmation.
+- \`BANK_TRANSFER_B2B_ESCROW_RELEASED\`: successful B2B transfer released after acceptance.
+- \`CARD_AUTHORIZATION_FAILED\`: card payment rejected before capture.
+- \`BUYER_CANCELLED_BEFORE_CAPTURE\`: buyer cancels before capture.
+- \`ESCROW_AWAITING_BUYER_CONFIRMATION\`: paid and held in escrow, but not released.
+- \`CLEARING_DELAYED_AFTER_RELEASE\`: escrow released, but clearing and settlement remain pending.
 
 ## Join Keys
 
@@ -390,10 +621,20 @@ phone numbers, addresses, or identity documents.
 - \`models/demo_model.jsonl\`: synthetic reconciliation model.
 - \`datasets/train.jsonl\`: clean assembled records for rule training.
 - \`datasets/test.jsonl\`: clean assembled records for validation.
-- \`datasets/test-with-anomaly.jsonl\`: validation records with one controlled settlement amount mismatch.
+- \`datasets/test-with-anomaly.jsonl\`: validation records with four controlled amount mismatches.
 - \`manifest.json\`: generation metadata, join keys, counts, and privacy notes.
 
-Run \`npm run verify:samples\` from the repository root before publishing sample updates. The verifier checks privacy patterns, join-key integrity, and the controlled anomaly shape.
+## Controlled Anomalies
+
+\`datasets/test-with-anomaly.jsonl\` keeps all join keys intact and injects four
+success-chain field mismatches:
+
+- \`ACQUIRING_CAPTURE_AMOUNT_MISMATCH\`: acquiring captured amount differs from payment amount.
+- \`ESCROW_RELEASE_AMOUNT_MISMATCH\`: release amount differs from held escrow amount.
+- \`CLEARING_FEE_AMOUNT_MISMATCH\`: clearing fee differs from payment fee.
+- \`SETTLEMENT_AMOUNT_MISMATCH\`: merchant settlement differs from clearing net amount.
+
+Run \`npm run verify:samples\` from the repository root before publishing sample updates. The verifier checks privacy patterns, join-key integrity, success-only amount rules, status-driven preconditions, and controlled anomaly shape.
 `);
 writeJsonl(path.join(targetRoot, 'datasets/train.jsonl'), trainRecords);
 writeJsonl(path.join(targetRoot, 'datasets/test.jsonl'), testRecords);

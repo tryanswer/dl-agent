@@ -7,19 +7,28 @@ phone numbers, addresses, or identity documents.
 
 - Demo model ID: `DL_SYNTH_MERCHANT_ESCROW_001`
 - Scenario: `merchant-payment-escrow-reconciliation`
-- Train records: 48
-- Test records: 12
-- Controlled anomaly records: 1
+- Train records: 80
+- Test records: 24
+- Controlled anomaly records: 4
 
 ## Business Flow
 
 1. A buyer creates a merchant order.
-2. The payment order captures the same amount.
-3. The acquiring transaction records the captured amount and fee.
-4. Escrow holds the paid amount until buyer confirmation.
-5. Escrow release pays the seller after confirmation.
-6. Clearing calculates merchant net amount.
-7. Settlement pays the merchant for the same batch and merchant key.
+2. The payment order can succeed, fail, be canceled, or wait for confirmation.
+3. Successful payments are captured by the acquiring transaction.
+4. Captured payments are held in escrow until buyer confirmation.
+5. Released escrow funds move into clearing and merchant settlement.
+6. Failed, canceled, pending-confirmation, and delayed-clearing rows keep the same join keys but should not satisfy success-only amount rules.
+
+## Scenario Profiles
+
+- `CARD_GOODS_ESCROW_RELEASED`: successful card payment, escrow release, clearing, and settlement.
+- `WALLET_DIGITAL_SERVICE_RELEASED`: successful wallet payment with instant confirmation.
+- `BANK_TRANSFER_B2B_ESCROW_RELEASED`: successful B2B transfer released after acceptance.
+- `CARD_AUTHORIZATION_FAILED`: card payment rejected before capture.
+- `BUYER_CANCELLED_BEFORE_CAPTURE`: buyer cancels before capture.
+- `ESCROW_AWAITING_BUYER_CONFIRMATION`: paid and held in escrow, but not released.
+- `CLEARING_DELAYED_AFTER_RELEASE`: escrow released, but clearing and settlement remain pending.
 
 ## Join Keys
 
@@ -36,7 +45,17 @@ phone numbers, addresses, or identity documents.
 - `models/demo_model.jsonl`: synthetic reconciliation model.
 - `datasets/train.jsonl`: clean assembled records for rule training.
 - `datasets/test.jsonl`: clean assembled records for validation.
-- `datasets/test-with-anomaly.jsonl`: validation records with one controlled settlement amount mismatch.
+- `datasets/test-with-anomaly.jsonl`: validation records with four controlled amount mismatches.
 - `manifest.json`: generation metadata, join keys, counts, and privacy notes.
 
-Run `npm run verify:samples` from the repository root before publishing sample updates. The verifier checks privacy patterns, join-key integrity, and the controlled anomaly shape.
+## Controlled Anomalies
+
+`datasets/test-with-anomaly.jsonl` keeps all join keys intact and injects four
+success-chain field mismatches:
+
+- `ACQUIRING_CAPTURE_AMOUNT_MISMATCH`: acquiring captured amount differs from payment amount.
+- `ESCROW_RELEASE_AMOUNT_MISMATCH`: release amount differs from held escrow amount.
+- `CLEARING_FEE_AMOUNT_MISMATCH`: clearing fee differs from payment fee.
+- `SETTLEMENT_AMOUNT_MISMATCH`: merchant settlement differs from clearing net amount.
+
+Run `npm run verify:samples` from the repository root before publishing sample updates. The verifier checks privacy patterns, join-key integrity, success-only amount rules, status-driven preconditions, and controlled anomaly shape.

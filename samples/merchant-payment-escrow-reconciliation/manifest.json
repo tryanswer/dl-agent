@@ -5,16 +5,116 @@
   "sourceCompanyDataIncluded": false,
   "demoModelId": "DL_SYNTH_MERCHANT_ESCROW_001",
   "modelVersion": "synthetic-v1",
-  "recordCount": 60,
-  "trainCount": 48,
-  "testCount": 12,
-  "anomalyCount": 1,
+  "recordCount": 104,
+  "trainCount": 80,
+  "testCount": 24,
+  "anomalyCount": 4,
   "generatedAt": "2026-06-02T00:00:00.000Z",
   "businessFlows": [
     "Merchant acquiring payment",
+    "Payment failure and buyer cancellation",
     "Escrow hold after successful payment",
     "Escrow release after buyer confirmation",
+    "Escrow pending confirmation",
+    "Clearing delayed after release",
     "Clearing and merchant settlement"
+  ],
+  "scenarioProfiles": [
+    {
+      "code": "CARD_GOODS_ESCROW_RELEASED",
+      "description": "Card acquiring payment for physical goods after delivery confirmation",
+      "orderStatus": "PAID",
+      "paymentStatus": "PAID",
+      "acquiringStatus": "CAPTURED",
+      "escrowStatus": "HELD",
+      "releaseStatus": "RELEASED",
+      "clearingStatus": "CLEARED",
+      "settlementStatus": "SETTLED"
+    },
+    {
+      "code": "WALLET_DIGITAL_SERVICE_RELEASED",
+      "description": "Wallet payment for digital service with instant buyer confirmation",
+      "orderStatus": "PAID",
+      "paymentStatus": "PAID",
+      "acquiringStatus": "CAPTURED",
+      "escrowStatus": "HELD",
+      "releaseStatus": "RELEASED",
+      "clearingStatus": "CLEARED",
+      "settlementStatus": "SETTLED"
+    },
+    {
+      "code": "BANK_TRANSFER_B2B_ESCROW_RELEASED",
+      "description": "Bank transfer payment for B2B order released after acceptance",
+      "orderStatus": "PAID",
+      "paymentStatus": "PAID",
+      "acquiringStatus": "CAPTURED",
+      "escrowStatus": "HELD",
+      "releaseStatus": "RELEASED",
+      "clearingStatus": "CLEARED",
+      "settlementStatus": "SETTLED"
+    },
+    {
+      "code": "CARD_AUTHORIZATION_FAILED",
+      "description": "Card acquiring payment rejected before capture",
+      "orderStatus": "PAYMENT_FAILED",
+      "paymentStatus": "FAILED",
+      "acquiringStatus": "DECLINED",
+      "escrowStatus": "NOT_HELD",
+      "releaseStatus": "NOT_RELEASED",
+      "clearingStatus": "NOT_CLEARED",
+      "settlementStatus": "NOT_SETTLED"
+    },
+    {
+      "code": "BUYER_CANCELLED_BEFORE_CAPTURE",
+      "description": "Buyer cancels order before payment capture",
+      "orderStatus": "CANCELED",
+      "paymentStatus": "CANCELED",
+      "acquiringStatus": "CANCELED",
+      "escrowStatus": "NOT_HELD",
+      "releaseStatus": "NOT_RELEASED",
+      "clearingStatus": "NOT_CLEARED",
+      "settlementStatus": "NOT_SETTLED"
+    },
+    {
+      "code": "ESCROW_AWAITING_BUYER_CONFIRMATION",
+      "description": "Payment captured and held in escrow before buyer confirmation",
+      "orderStatus": "AWAITING_CONFIRMATION",
+      "paymentStatus": "PAID",
+      "acquiringStatus": "CAPTURED",
+      "escrowStatus": "HELD",
+      "releaseStatus": "PENDING_CONFIRMATION",
+      "clearingStatus": "PENDING",
+      "settlementStatus": "PENDING"
+    },
+    {
+      "code": "CLEARING_DELAYED_AFTER_RELEASE",
+      "description": "Escrow released but clearing and merchant settlement are delayed",
+      "orderStatus": "RELEASED",
+      "paymentStatus": "PAID",
+      "acquiringStatus": "CAPTURED",
+      "escrowStatus": "HELD",
+      "releaseStatus": "RELEASED",
+      "clearingStatus": "PENDING",
+      "settlementStatus": "PENDING"
+    }
+  ],
+  "controlledAnomalies": [
+    {
+      "testRecordIndex": 0,
+      "type": "ACQUIRING_CAPTURE_AMOUNT_MISMATCH"
+    },
+    {
+      "testRecordIndex": 1,
+      "type": "ESCROW_RELEASE_AMOUNT_MISMATCH"
+    },
+    {
+      "testRecordIndex": 2,
+      "type": "CLEARING_FEE_AMOUNT_MISMATCH"
+    },
+    {
+      "testRecordIndex": 7,
+      "type": "SETTLEMENT_AMOUNT_MISMATCH"
+    }
   ],
   "demoTables": [
     "driftledger.merchant_order",

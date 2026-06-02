@@ -21,6 +21,25 @@ const LOW_RISK_PATH_PATTERN = /fingerprint|hash|checksum|digest/i;
 const HIGH_RISK_KEY_PATTERN =
   /(^|[_\-.])(account|acct|card|cert|address|addr|phone|mobile|email|name)([_\-.]|$)|账号|账户|卡号|证件|地址|手机|姓名|户名/i;
 
+const CONTROLLED_ANOMALIES = {
+  ACQUIRING_CAPTURE_AMOUNT_MISMATCH: {
+    pairId: 'payment_capture_amount',
+    diffCents: 200,
+  },
+  ESCROW_RELEASE_AMOUNT_MISMATCH: {
+    pairId: 'escrow_release_amount',
+    diffCents: -300,
+  },
+  CLEARING_FEE_AMOUNT_MISMATCH: {
+    pairId: 'payment_clearing_fee',
+    diffCents: 50,
+  },
+  SETTLEMENT_AMOUNT_MISMATCH: {
+    pairId: 'clearing_settlement_amount',
+    diffCents: 100,
+  },
+};
+
 function walkFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(dir, entry.name);
@@ -140,36 +159,89 @@ function inspectAssembledRecord(file, line, record) {
     }
   });
 
+  const isAnomalyFile = path.basename(file) === 'test-with-anomaly.jsonl';
+  const anomalyType = record.anomaly?.type;
+  const anomaly = isAnomalyFile && anomalyType ? CONTROLLED_ANOMALIES[anomalyType] : null;
+  if (isAnomalyFile && anomalyType && !anomaly) {
+    addFinding(file, line, 'anomaly.type', 'unknown controlled anomaly type', anomalyType);
+  }
+  if (!isAnomalyFile && anomalyType) {
+    addFinding(file, line, 'anomaly.type', 'anomaly marker outside anomaly file', anomalyType);
+  }
+
+  const paymentPaid = value(paymentOrder, 'payment_status') === 'PAID';
+  const acquiringCaptured = value(acquiringTransaction, 'acquiring_status') === 'CAPTURED';
+  const escrowHeld = value(escrowLedger, 'escrow_status') === 'HELD';
+  const releaseReleased = value(escrowRelease, 'release_status') === 'RELEASED';
+  const clearingCleared = value(clearingRecord, 'clearing_status') === 'CLEARED';
+  const settlementSettled = value(settlementRecord, 'settlement_status') === 'SETTLED';
+
   const amountPairs = [
-    [`${paymentOrder}#payment_amount`, value(paymentOrder, 'payment_amount'), `${acquiringTransaction}#capture_amount`, value(acquiringTransaction, 'capture_amount')],
-    [`${paymentOrder}#payment_amount`, value(paymentOrder, 'payment_amount'), `${escrowLedger}#escrow_amount`, value(escrowLedger, 'escrow_amount')],
-    [`${escrowLedger}#escrow_amount`, value(escrowLedger, 'escrow_amount'), `${escrowRelease}#release_amount`, value(escrowRelease, 'release_amount')],
-    [`${paymentOrder}#net_amount`, value(paymentOrder, 'net_amount'), `${clearingRecord}#net_amount`, value(clearingRecord, 'net_amount')],
+    {
+      pairId: 'payment_capture_amount',
+      leftPath: `${paymentOrder}#payment_amount`,
+      leftValue: value(paymentOrder, 'payment_amount'),
+      rightPath: `${acquiringTransaction}#capture_amount`,
+      rightValue: value(acquiringTransaction, 'capture_amount'),
+      active: paymentPaid && acquiringCaptured,
+    },
+    {
+      pairId: 'payment_escrow_amount',
+      leftPath: `${paymentOrder}#payment_amount`,
+      leftValue: value(paymentOrder, 'payment_amount'),
+      rightPath: `${escrowLedger}#escrow_amount`,
+      rightValue: value(escrowLedger, 'escrow_amount'),
+      active: paymentPaid && escrowHeld,
+    },
+    {
+      pairId: 'escrow_release_amount',
+      leftPath: `${escrowLedger}#escrow_amount`,
+      leftValue: value(escrowLedger, 'escrow_amount'),
+      rightPath: `${escrowRelease}#release_amount`,
+      rightValue: value(escrowRelease, 'release_amount'),
+      active: escrowHeld && releaseReleased,
+    },
+    {
+      pairId: 'payment_clearing_net',
+      leftPath: `${paymentOrder}#net_amount`,
+      leftValue: value(paymentOrder, 'net_amount'),
+      rightPath: `${clearingRecord}#net_amount`,
+      rightValue: value(clearingRecord, 'net_amount'),
+      active: paymentPaid && clearingCleared,
+    },
+    {
+      pairId: 'payment_clearing_fee',
+      leftPath: `${paymentOrder}#fee_amount`,
+      leftValue: value(paymentOrder, 'fee_amount'),
+      rightPath: `${clearingRecord}#fee_amount`,
+      rightValue: value(clearingRecord, 'fee_amount'),
+      active: paymentPaid && clearingCleared,
+    },
+    {
+      pairId: 'clearing_settlement_amount',
+      leftPath: `${clearingRecord}#net_amount`,
+      leftValue: value(clearingRecord, 'net_amount'),
+      rightPath: `${settlementRecord}#settlement_amount`,
+      rightValue: value(settlementRecord, 'settlement_amount'),
+      active: clearingCleared && settlementSettled,
+    },
   ];
 
-  amountPairs.forEach(([leftPath, leftValue, rightPath, rightValue]) => {
-    if (leftValue !== rightValue) {
-      addFinding(file, line, `${leftPath} = ${rightPath}`, 'unexpected amount mismatch', `${leftValue} != ${rightValue}`);
+  amountPairs.forEach((pair) => {
+    if (!pair.active) return;
+    const diffCents = Math.round(Number(pair.rightValue) * 100) - Math.round(Number(pair.leftValue) * 100);
+    if (anomaly?.pairId === pair.pairId) {
+      if (diffCents !== anomaly.diffCents) {
+        addFinding(file, line, `${pair.leftPath} = ${pair.rightPath}`,
+          'controlled anomaly has unexpected amount delta', `${pair.leftValue} != ${pair.rightValue}`);
+      }
+      return;
+    }
+    if (pair.leftValue !== pair.rightValue) {
+      addFinding(file, line, `${pair.leftPath} = ${pair.rightPath}`,
+        'unexpected amount mismatch for active success-condition rule', `${pair.leftValue} != ${pair.rightValue}`);
     }
   });
-
-  const clearingNetAmount = value(clearingRecord, 'net_amount');
-  const settlementAmount = value(settlementRecord, 'settlement_amount');
-  const isAnomalyFile = path.basename(file) === 'test-with-anomaly.jsonl';
-  const hasExpectedAnomaly = record.anomaly?.type === 'SETTLEMENT_AMOUNT_MISMATCH';
-  if (!isAnomalyFile || !hasExpectedAnomaly) {
-    if (clearingNetAmount !== settlementAmount) {
-      addFinding(file, line, `${clearingRecord}#net_amount = ${settlementRecord}#settlement_amount`,
-        'settlement amount mismatch outside controlled anomaly', `${clearingNetAmount} != ${settlementAmount}`);
-    }
-    return;
-  }
-
-  const diffCents = Math.round(Number(settlementAmount) * 100) - Math.round(Number(clearingNetAmount) * 100);
-  if (diffCents !== 100) {
-    addFinding(file, line, `${clearingRecord}#net_amount = ${settlementRecord}#settlement_amount`,
-      'controlled anomaly amount is not exactly 1.00 CNY', `${clearingNetAmount} != ${settlementAmount}`);
-  }
 }
 
 if (!fs.existsSync(sampleRoot)) {
