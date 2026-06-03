@@ -7,6 +7,17 @@ const DEFAULT_WORKSPACE = 'Default';
 const AUTH_COOKIE = 'AUTH_TOKEN';
 const CONFIG_DIR = path.join(os.homedir(), '.driftledger');
 const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
+const DEFAULT_DEMO_SCENARIO = 'merchant-payment-escrow-reconciliation';
+const DEFAULT_DEMO_BASE_URL =
+  `https://raw.githubusercontent.com/tryanswer/dl-agent/main/samples/${DEFAULT_DEMO_SCENARIO}`;
+const DEMO_FILES = [
+  'README.md',
+  'manifest.json',
+  'datasets/train.jsonl',
+  'datasets/test.jsonl',
+  'datasets/test-with-anomaly.jsonl',
+  'models/demo_model.jsonl',
+];
 
 class DriftLedgerCliError extends Error {
   constructor(message, details = {}) {
@@ -207,6 +218,7 @@ function buildEndpoint(positionals, flags = {}, runtime = {}) {
 
   if (scope === 'metadata' || scope === 'meta') {
     if (action === 'upsert' || action === 'add') return {method: 'POST', path: `/api/v1/meta/add/${workspace()}`};
+    if (action === 'col-types' || action === 'types') return {method: 'GET', path: '/api/v1/meta/field/col-types'};
     if (action === 'tables' || action === 'list') {
       return {method: 'POST', path: `/api/v1/meta/list/table/${workspace()}/${page()}/${pageSize()}`, body: {}};
     }
@@ -300,6 +312,7 @@ function buildEndpoint(positionals, flags = {}, runtime = {}) {
   }
 
   if (scope === 'rule' || scope === 'rules') {
+    if (action === 'types') return {method: 'GET', path: '/api/v1/rule/types'};
     if (action === 'add' || action === 'create') return {method: 'POST', path: `/api/v1/rule/add/${workspace()}`};
     if (action === 'update') return {method: 'PUT', path: `/api/v1/rule/update/${workspace()}`};
     if (action === 'list') {
@@ -404,6 +417,59 @@ function buildEndpoint(positionals, flags = {}, runtime = {}) {
   throw new DriftLedgerCliError(`Unknown command: ${positionals.join(' ')}`);
 }
 
+function buildDemoPullPlan({flags = {}, env = process.env} = {}) {
+  const scenario = firstPresent(flags.scenario, flags.case, DEFAULT_DEMO_SCENARIO);
+  if (scenario !== DEFAULT_DEMO_SCENARIO) {
+    throw new DriftLedgerCliError(`Unsupported demo scenario: ${scenario}`);
+  }
+
+  const root = path.resolve(expandHome(firstPresent(
+    flags.out,
+    flags.output,
+    env.DRIFTLEDGER_DEMO_DIR,
+    path.join(CONFIG_DIR, 'samples', scenario),
+  )));
+  const sourceBase = stripTrailingSlash(firstPresent(
+    flags.sourceBase,
+    env.DRIFTLEDGER_DEMO_BASE_URL,
+    DEFAULT_DEMO_BASE_URL,
+  ));
+  const files = DEMO_FILES.map((relativePath) => ({
+    relativePath,
+    url: `${sourceBase}/${relativePath}`,
+    outputPath: path.join(root, relativePath),
+  }));
+  const assembledTrain = path.join(root, 'datasets', 'train.jsonl');
+  const assembledTest = path.join(root, 'datasets', 'test.jsonl');
+  const assembledAnomalyTest = path.join(root, 'datasets', 'test-with-anomaly.jsonl');
+
+  return {
+    scenario,
+    sourceBase,
+    root,
+    files,
+    commands: {
+      uploadTrain: `dl dataset upload-assembled --dataset <datasetId> --file ${quoteShellPath(assembledTrain)}`,
+      uploadTest: `dl dataset upload-assembled --dataset <datasetId> --file ${quoteShellPath(assembledTest)}`,
+      uploadAnomalyTest:
+        `dl dataset upload-assembled --dataset <datasetId> --file ${quoteShellPath(assembledAnomalyTest)}`,
+    },
+  };
+}
+
+function expandHome(value) {
+  const text = String(value);
+  if (text === '~') return os.homedir();
+  if (text.startsWith('~/')) return path.join(os.homedir(), text.slice(2));
+  return text;
+}
+
+function quoteShellPath(filePath) {
+  const text = String(filePath);
+  if (/^[A-Za-z0-9_./:=@+-]+$/.test(text)) return text;
+  return `'${text.replace(/'/g, "'\\''")}'`;
+}
+
 function buildSourceBindingBody(flags) {
   if (!flags.metaTableId && !flags.table) return undefined;
   return {
@@ -502,6 +568,9 @@ function agentInstruction(agent, config = {}) {
     'If `skills/driftledger-incident-review` is installed, use it after a run creates incidents or alert deliveries.',
     'Prefer JSON output and pass data through files instead of long inline payloads.',
     'Start with `dl doctor`, `dl auth verify`, and `dl workspace list`. If no workspace is specified, `dl` uses `Default`.',
+    'For the public demo, run `dl demo pull` and use the downloaded JSONL paths from the command output.',
+    'For metadata field `types`, prefer omission; if constrained hints are needed, use only values from `dl metadata col-types`.',
+    'For manual rule `ruleType`, use only values from `dl rule types`.',
     'For raw exports, upload CSV with `dl dataset upload`, then run `dl assembly submit` and `dl assembly run`.',
     'For preassembled data, upload JSONL with `dl dataset upload-assembled`.',
     'Create or select a reconciliation model with `dl check-model`, then train or add reviewed rules.',
@@ -517,15 +586,19 @@ const HELP = `DriftLedger Agent CLI
 
 Usage:
   dl doctor
+  dl demo pull
   dl agent init codex|claude|openclaw|generic
   dl dataset upload --dataset <datasetId> --file payment_order.csv
   dl incidents list
 
 Long-form command:
+  driftledger demo pull
+  driftledger demo pull --out ./driftledger-demo
   driftledger config set --api-url <url> --token <jwt>
   driftledger config set --workspace <spId>
   driftledger auth login --email <email> --password <password>
   driftledger workspace create --name "Default"
+  driftledger metadata col-types
   driftledger metadata upsert --body-file meta.json
   driftledger data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
   driftledger source-binding upsert --body-file binding.json
@@ -538,6 +611,7 @@ Long-form command:
   driftledger check-model create --body-file check-model.json
   driftledger infer-task submit --body-file infer-task.json
   driftledger infer-task progress --task <inferTaskId>
+  driftledger rule types
   driftledger rule add --body-file rule.json
   driftledger rule-forest build
   driftledger rule-forest status
@@ -555,11 +629,14 @@ Long-form command:
 module.exports = {
   AUTH_COOKIE,
   CONFIG_PATH,
+  DEFAULT_DEMO_BASE_URL,
+  DEFAULT_DEMO_SCENARIO,
   DEFAULT_API_URL,
   DriftLedgerCliError,
   HELP,
   agentInstruction,
   asArray,
+  buildDemoPullPlan,
   buildEndpoint,
   extractAuthToken,
   loadStoredConfig,

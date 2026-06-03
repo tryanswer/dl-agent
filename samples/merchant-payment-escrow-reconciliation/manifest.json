@@ -5,8 +5,8 @@
   "sourceCompanyDataIncluded": false,
   "demoModelId": "DL_SYNTH_MERCHANT_ESCROW_001",
   "modelVersion": "synthetic-v1",
-  "recordCount": 104,
-  "trainCount": 80,
+  "recordCount": 188,
+  "trainCount": 160,
   "testCount": 24,
   "anomalyCount": 4,
   "generatedAt": "2026-06-02T00:00:00.000Z",
@@ -100,19 +100,23 @@
   ],
   "controlledAnomalies": [
     {
-      "testRecordIndex": 0,
+      "sourceTestRecordIndex": 0,
+      "anomalyRecordIndex": 0,
       "type": "ACQUIRING_CAPTURE_AMOUNT_MISMATCH"
     },
     {
-      "testRecordIndex": 1,
+      "sourceTestRecordIndex": 1,
+      "anomalyRecordIndex": 1,
       "type": "ESCROW_RELEASE_AMOUNT_MISMATCH"
     },
     {
-      "testRecordIndex": 2,
+      "sourceTestRecordIndex": 2,
+      "anomalyRecordIndex": 2,
       "type": "CLEARING_FEE_AMOUNT_MISMATCH"
     },
     {
-      "testRecordIndex": 7,
+      "sourceTestRecordIndex": 7,
+      "anomalyRecordIndex": 3,
       "type": "SETTLEMENT_AMOUNT_MISMATCH"
     }
   ],

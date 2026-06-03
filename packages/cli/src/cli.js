@@ -6,6 +6,7 @@ const {
   DriftLedgerCliError,
   HELP,
   agentInstruction,
+  buildDemoPullPlan,
   buildEndpoint,
   extractAuthToken,
   loadStoredConfig,
@@ -44,6 +45,10 @@ async function main(argv = process.argv.slice(2), io = process) {
 
     if (scope === 'config') {
       return handleConfig(action, flags, stored, runtime, io);
+    }
+
+    if (scope === 'demo' && (action === 'pull' || action === 'download')) {
+      return handleDemoPull(flags, io);
     }
 
     if (scope === 'agent' && action === 'init') {
@@ -113,6 +118,50 @@ function handleConfig(action, flags, stored, runtime, io) {
   }
 
   throw new DriftLedgerCliError(`Unknown config action: ${action}`);
+}
+
+async function handleDemoPull(flags, io) {
+  const plan = buildDemoPullPlan({flags, env: io.env});
+  const files = [];
+
+  for (const file of plan.files) {
+    if (fs.existsSync(file.outputPath) && !flags.force) {
+      files.push({
+        path: file.outputPath,
+        relativePath: file.relativePath,
+        status: 'skipped',
+        bytes: fs.statSync(file.outputPath).size,
+      });
+      continue;
+    }
+
+    const response = await fetch(file.url);
+    if (!response.ok) {
+      throw new DriftLedgerCliError(`Failed to download demo asset: ${file.relativePath}`, {
+        status: response.status,
+        url: file.url,
+      });
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    fs.mkdirSync(path.dirname(file.outputPath), {recursive: true});
+    fs.writeFileSync(file.outputPath, buffer);
+    files.push({
+      path: file.outputPath,
+      relativePath: file.relativePath,
+      status: 'downloaded',
+      bytes: buffer.length,
+    });
+  }
+
+  return writeJson(io, {
+    ok: true,
+    scenario: plan.scenario,
+    sourceBase: plan.sourceBase,
+    root: plan.root,
+    files,
+    commands: plan.commands,
+  });
 }
 
 async function requestJson(runtime, endpoint, flags) {

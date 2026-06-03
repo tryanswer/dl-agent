@@ -66,11 +66,14 @@ dl doctor
 dl config set --api-url https://driftledger.fatclaw.com
 dl auth login --email you@example.com --password "<password>"
 dl workspace list
+dl demo pull
+DEMO_ROOT="${DRIFTLEDGER_DEMO_DIR:-$HOME/.driftledger/samples/merchant-payment-escrow-reconciliation}"
 dl dataset create-assembled --display-name merchant-payment-escrow
-dl dataset upload-assembled --dataset <datasetId> --file samples/merchant-payment-escrow-reconciliation/datasets/train.jsonl
+dl dataset upload-assembled --dataset <datasetId> --file "$DEMO_ROOT/datasets/train.jsonl"
 dl check-model create --body-file examples/body-files/check-model.json
 dl infer-task submit --body-file examples/body-files/infer-task.json
 dl infer-task progress --task <inferTaskId>
+dl rule types
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
 dl alerts upsert --body-file examples/body-files/alert-email-channel.json

@@ -13,6 +13,9 @@ const targetRoot = path.resolve(repoRoot, 'samples', sampleName);
 const modelId = 'DL_SYNTH_MERCHANT_ESCROW_001';
 const modelVersion = 'synthetic-v1';
 const generatedAt = '2026-06-02T00:00:00.000Z';
+const trainRecordCount = 160;
+const testRecordCount = 24;
+const testRecordOffset = 240;
 
 const tables = {
   merchantOrder: 'driftledger.merchant_order',
@@ -426,18 +429,19 @@ function writeText(file, content) {
   fs.writeFileSync(file, content);
 }
 
-const trainRecords = Array.from({ length: 80 }, (_, index) => buildRecord(index, 'train', index));
-const testRecords = Array.from({ length: 24 }, (_, index) => buildRecord(index + 120, 'test', index));
+const trainRecords = Array.from({ length: trainRecordCount }, (_, index) => buildRecord(index, 'train', index));
+const testRecords = Array.from({ length: testRecordCount }, (_, index) => (
+  buildRecord(index + testRecordOffset, 'test', index)
+));
 const anomalyByIndex = new Map([
   [0, 'ACQUIRING_CAPTURE_AMOUNT_MISMATCH'],
   [1, 'ESCROW_RELEASE_AMOUNT_MISMATCH'],
   [2, 'CLEARING_FEE_AMOUNT_MISMATCH'],
   [7, 'SETTLEMENT_AMOUNT_MISMATCH'],
 ]);
-const anomalyRecords = testRecords.map((record, index) => {
-  const anomalyType = anomalyByIndex.get(index);
-  return anomalyType ? withAnomaly(record, anomalyType) : cloneRecord(record);
-});
+const anomalyRecords = Array.from(anomalyByIndex.entries()).map(([index, anomalyType]) => (
+  withAnomaly(testRecords[index], anomalyType)
+));
 
 const manifest = {
   product: 'driftledger',
@@ -446,10 +450,10 @@ const manifest = {
   sourceCompanyDataIncluded: false,
   demoModelId: modelId,
   modelVersion,
-  recordCount: trainRecords.length + testRecords.length,
+  recordCount: trainRecords.length + testRecords.length + anomalyRecords.length,
   trainCount: trainRecords.length,
   testCount: testRecords.length,
-  anomalyCount: anomalyRecords.filter((record) => record.anomaly).length,
+  anomalyCount: anomalyRecords.length,
   generatedAt,
   businessFlows: [
     'Merchant acquiring payment',
@@ -471,8 +475,9 @@ const manifest = {
     clearingStatus: profile.clearingStatus,
     settlementStatus: profile.settlementStatus,
   })),
-  controlledAnomalies: Array.from(anomalyByIndex.entries()).map(([index, type]) => ({
-    testRecordIndex: index,
+  controlledAnomalies: Array.from(anomalyByIndex.entries()).map(([index, type], anomalyRecordIndex) => ({
+    sourceTestRecordIndex: index,
+    anomalyRecordIndex,
     type,
   })),
   demoTables: Object.values(tables),
@@ -621,13 +626,13 @@ phone numbers, addresses, or identity documents.
 - \`models/demo_model.jsonl\`: synthetic reconciliation model.
 - \`datasets/train.jsonl\`: clean assembled records for rule training.
 - \`datasets/test.jsonl\`: clean assembled records for validation.
-- \`datasets/test-with-anomaly.jsonl\`: validation records with four controlled amount mismatches.
+- \`datasets/test-with-anomaly.jsonl\`: four anomaly-only records for incident verification.
 - \`manifest.json\`: generation metadata, join keys, counts, and privacy notes.
 
 ## Controlled Anomalies
 
-\`datasets/test-with-anomaly.jsonl\` keeps all join keys intact and injects four
-success-chain field mismatches:
+\`datasets/test-with-anomaly.jsonl\` contains only four success-chain records
+with injected field mismatches. It keeps all join keys intact:
 
 - \`ACQUIRING_CAPTURE_AMOUNT_MISMATCH\`: acquiring captured amount differs from payment amount.
 - \`ESCROW_RELEASE_AMOUNT_MISMATCH\`: release amount differs from held escrow amount.

@@ -26,6 +26,24 @@ npm install -g ./packages/cli
 dl doctor
 ```
 
+## Demo Assets
+
+The npm package does not bundle sample data. Download the public synthetic
+merchant-payment-escrow scenario with the CLI:
+
+```bash
+dl demo pull
+# Default root:
+# ~/.driftledger/samples/merchant-payment-escrow-reconciliation
+
+# Optional project-local copy:
+dl demo pull --out ./driftledger-demo
+```
+
+`dl demo pull` prints JSON with `root`, file statuses, and upload command
+templates. Use `--force` to refresh existing files, and `--source-base <url>` or
+`DRIFTLEDGER_DEMO_BASE_URL` when an agent needs a mirror.
+
 ## Agent Setup
 
 Generate a short instruction block for the agent you use:
@@ -74,13 +92,16 @@ dl agent init generic --out AGENT.md
 3. Upload data. Use assembled JSONL when data is already joined:
 
 ```bash
+dl demo pull
+DEMO_ROOT="${DRIFTLEDGER_DEMO_DIR:-$HOME/.driftledger/samples/merchant-payment-escrow-reconciliation}"
 dl dataset create-assembled --display-name merchant-payment-escrow
-dl dataset upload-assembled --dataset <datasetId> --file assembled.jsonl
+dl dataset upload-assembled --dataset <datasetId> --file "$DEMO_ROOT/datasets/train.jsonl"
 ```
 
 Use raw CSV when DriftLedger should assemble related tables:
 
 ```bash
+dl metadata col-types
 dl metadata upsert --body-file meta.json
 dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
 dl source-binding upsert --body-file binding.json
@@ -90,6 +111,10 @@ dl assembly submit --body-file assembly.json
 dl assembly run --task <assemblyTaskId>
 ```
 
+Field `types` in metadata are optional. If an agent provides them, use only
+values returned by `dl metadata col-types`, not SQL or file-parser types such as
+`STRING`, `DECIMAL`, or `DATETIME`.
+
 4. Create a reconciliation model, train or add rules, build RuleForest, configure
    alerts, run checks, and inspect incidents:
 
@@ -97,6 +122,7 @@ dl assembly run --task <assemblyTaskId>
 dl check-model create --body-file check-model.json
 dl infer-task submit --body-file infer-task.json
 dl infer-task progress --task <inferTaskId>
+dl rule types
 dl rule add --body-file rule.json
 dl rule-forest build
 dl alerts upsert --body-file alert-email-channel.json
@@ -107,10 +133,15 @@ dl incidents task --task <taskId>
 dl alerts deliveries --task <taskId>
 ```
 
+Manual rule payloads must use a `ruleType` returned by `dl rule types`.
+
 ## Minimum Flow
 
 ```bash
 dl workspace list
+dl demo pull
+DEMO_ROOT="${DRIFTLEDGER_DEMO_DIR:-$HOME/.driftledger/samples/merchant-payment-escrow-reconciliation}"
+dl metadata col-types
 dl metadata upsert --body-file meta.json
 dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
 dl source-binding upsert --body-file binding.json
@@ -119,10 +150,11 @@ dl dataset upload --dataset <datasetId> --file payment_order.csv
 dl assembly submit --body-file assembly.json
 dl assembly run --task <assemblyTaskId>
 dl dataset create-assembled --display-name assembled-ledger
-dl dataset upload-assembled --dataset <datasetId> --file assembled.jsonl
+dl dataset upload-assembled --dataset <datasetId> --file "$DEMO_ROOT/datasets/train.jsonl"
 dl check-model create --body-file check-model.json
 dl infer-task submit --body-file infer-task.json
 dl infer-task progress --task <inferTaskId>
+dl rule types
 dl rule add --body-file rule.json
 dl rule-forest build
 dl alerts upsert --body-file alert-email-channel.json

@@ -32,7 +32,7 @@ The first package is `@driftledger/cli`, exposed as both:
 - Create metadata, source bindings, reconciliation models, rules, and execution tasks.
 - Inspect execution result indexes and incidents through JSON output.
 - Configure email or webhook alert channels and inspect delivery logs after a run.
-- Reuse synthetic demo assets for training, validation, and incident smoke tests.
+- Download and reuse synthetic demo assets for training, validation, and incident smoke tests.
 
 ## Product Vocabulary
 
@@ -43,7 +43,7 @@ and examples:
 | --- | --- |
 | Workspace | Isolation boundary for metadata, data, reconciliation models, rules, runs, incidents, and one compiled RuleForest. |
 | Table metadata | Registered source table shape, ownership, risk level, and descriptive context. |
-| Field metadata | Registered field shape, type hints, join-key flags, primary-key flags, and risk level. |
+| Field metadata | Registered field shape, optional algorithm type hints, join-key flags, primary-key flags, and risk level. Omit type hints unless you need to constrain inference. |
 | Raw table data | CSV exports that preserve the original source-table identity. |
 | Assembled data | JSONL records that already join related source rows into reconciliation samples. |
 | Reconciliation model | The configured model for one business scenario. It defines table relationships, assembly scope, and the parent object for rules. The CLI command group is `check-model` for backend compatibility. |
@@ -206,19 +206,36 @@ dl agent init generic --out AGENT.md
 Commit the instruction file only after confirming it contains no tokens,
 passwords, cookies, raw account numbers, webhook secrets, or company data.
 
-### 4. Choose the data path
+### 4. Download demo assets or choose the data path
+
+The npm CLI package does not bundle sample files. For the public
+merchant-payment-escrow scenario, download the synthetic assets with the CLI:
+
+```bash
+dl demo pull
+# Default root:
+# ~/.driftledger/samples/merchant-payment-escrow-reconciliation
+
+# Optional explicit project-local copy:
+dl demo pull --out ./driftledger-demo
+```
+
+The command prints JSON with `root`, downloaded `files`, and ready-to-adapt
+upload commands. Agents should read `root` from that output when possible.
 
 Use the assembled-data path when another job has already produced joined JSONL:
 
 ```bash
+DEMO_ROOT="${DRIFTLEDGER_DEMO_DIR:-$HOME/.driftledger/samples/merchant-payment-escrow-reconciliation}"
 dl dataset create-assembled --display-name merchant-payment-escrow
-dl dataset upload-assembled --dataset <datasetId> --file samples/merchant-payment-escrow-reconciliation/datasets/train.jsonl
+dl dataset upload-assembled --dataset <datasetId> --file "$DEMO_ROOT/datasets/train.jsonl"
 ```
 
 Use the raw-table path when the user uploads CSV exports and DriftLedger should
 preserve table identity before assembly:
 
 ```bash
+dl metadata col-types
 dl metadata upsert --body-file examples/body-files/meta.json
 dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
 dl source-binding upsert --body-file examples/body-files/binding.json
@@ -227,6 +244,10 @@ dl dataset upload --dataset <datasetId> --file payment_order.csv
 dl assembly submit --body-file examples/body-files/assembly.json
 dl assembly run --task <assemblyTaskId>
 ```
+
+Field `types` in metadata are optional. If an agent provides them, use only
+values returned by `dl metadata col-types`, not SQL or file-parser types such as
+`STRING`, `DECIMAL`, or `DATETIME`.
 
 ### 5. Create the reconciliation model
 
@@ -251,9 +272,12 @@ dl infer-task progress --task <inferTaskId>
 Add a reviewed rule before execution:
 
 ```bash
+dl rule types
 dl rule add --body-file examples/body-files/rule.json
 dl rule list
 ```
+
+Manual rule payloads must use a `ruleType` returned by `dl rule types`.
 
 ### 7. Build RuleForest
 
@@ -304,24 +328,27 @@ dl workspace list
 dl config set --workspace <spId>
 ```
 
-The commands below use the bundled merchant-payment-escrow reconciliation demo. It is
-the fastest path for an agent to prove the complete DriftLedger flow: upload
-assembled data, create a reconciliation model, add rules, execute validation, and
-inspect incidents.
+The commands below use the downloadable merchant-payment-escrow reconciliation
+demo. It is the fastest path for an agent to prove the complete DriftLedger
+flow: upload assembled data, create a reconciliation model, add rules, execute
+validation, and inspect incidents.
 
 Use the assembled-data path when another job already produced joined reconciliation rows:
 
 ```bash
+dl demo pull
+DEMO_ROOT="${DRIFTLEDGER_DEMO_DIR:-$HOME/.driftledger/samples/merchant-payment-escrow-reconciliation}"
 dl dataset create-assembled --display-name merchant-payment-escrow
-dl dataset upload-assembled --dataset <datasetId> --file samples/merchant-payment-escrow-reconciliation/datasets/train.jsonl
+dl dataset upload-assembled --dataset <datasetId> --file "$DEMO_ROOT/datasets/train.jsonl"
 dl dataset create-assembled --display-name merchant-payment-escrow-anomaly
-dl dataset upload-assembled --dataset <anomalyDatasetId> --file samples/merchant-payment-escrow-reconciliation/datasets/test-with-anomaly.jsonl
+dl dataset upload-assembled --dataset <anomalyDatasetId> --file "$DEMO_ROOT/datasets/test-with-anomaly.jsonl"
 dl check-model create --body-file examples/body-files/check-model.json
 # Replace <riskModelCode>, <riskModelVersion>, <riskModelId>, <trainingAssembledDatasetId>,
 # and <anomalyAssembledDatasetId>
 # in examples/body-files/*.json with the IDs returned by the previous commands.
 dl infer-task submit --body-file examples/body-files/infer-task.json
 dl infer-task progress --task <inferTaskId>
+dl rule types
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
 dl rule-forest status
@@ -336,6 +363,7 @@ dl alerts deliveries --task <taskId>
 Use the raw-table path when DriftLedger should preserve source-table identity before assembly:
 
 ```bash
+dl metadata col-types
 dl metadata upsert --body-file examples/body-files/meta.json
 dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
 dl source-binding upsert --body-file examples/body-files/binding.json
@@ -355,23 +383,55 @@ success statuses, fees, and money amounts remain consistent. The training data
 also includes payment failures, buyer cancellations, pending buyer confirmation,
 and delayed clearing so trained rules can learn meaningful preconditions.
 
+Business flow and table relationship design:
+
 ```mermaid
 flowchart LR
-  MO["merchant_order<br/>order_no, merchant_id"]
-  PO["payment_order<br/>payment_id, order_no"]
-  ACQ["acquiring_transaction<br/>payment_id, capture_amount, net_amount"]
-  ESC["escrow_ledger<br/>escrow_id, payment_id"]
-  REL["escrow_release<br/>escrow_id, release_amount"]
-  CLR["clearing_record<br/>payment_id, settlement_batch_no, net_amount"]
-  SET["settlement_record<br/>settlement_batch_no, merchant_id, settlement_amount"]
+  subgraph ORDER["1. Merchant order"]
+    MO["driftledger.merchant_order<br/>order_no<br/>merchant_id<br/>order_status"]
+  end
 
-  MO <-->|order_no| PO
-  PO <-->|payment_id| ACQ
-  PO <-->|payment_id| ESC
-  ESC <-->|escrow_id| REL
-  PO <-->|payment_id| CLR
-  CLR <-->|settlement_batch_no + merchant_id| SET
+  subgraph PAY["2. Payment"]
+    PO["driftledger.payment_order<br/>payment_id<br/>order_no<br/>payment_status<br/>payment_amount, fee_amount, net_amount"]
+  end
+
+  subgraph ACQUIRE["3. Acquiring capture"]
+    ACQ["driftledger.acquiring_transaction<br/>payment_id<br/>acquiring_status<br/>capture_amount, fee_amount, net_amount"]
+  end
+
+  subgraph ESCROW["4. Escrow hold and release"]
+    ESC["driftledger.escrow_ledger<br/>escrow_id<br/>payment_id<br/>escrow_status<br/>escrow_amount"]
+    REL["driftledger.escrow_release<br/>escrow_id<br/>release_status<br/>release_amount"]
+  end
+
+  subgraph SETTLE["5. Clearing and settlement"]
+    CLR["driftledger.clearing_record<br/>payment_id<br/>settlement_batch_no<br/>merchant_id<br/>clearing_status<br/>fee_amount, net_amount"]
+    SET["driftledger.settlement_record<br/>settlement_batch_no<br/>merchant_id<br/>settlement_status<br/>settlement_amount"]
+  end
+
+  MO -- "order_no" --> PO
+  PO -- "payment_id" --> ACQ
+  PO -- "payment_id" --> ESC
+  ESC -- "escrow_id" --> REL
+  PO -- "payment_id" --> CLR
+  CLR -- "settlement_batch_no + merchant_id" --> SET
 ```
+
+The same assembled record carries all seven tables in `tableDataMap`. Join keys
+are preserved even in anomaly records, so incidents are caused by checked field
+values rather than broken assembly.
+
+Scenario coverage:
+
+| Scenario profile | Path covered | Rule-learning purpose |
+| --- | --- | --- |
+| `CARD_GOODS_ESCROW_RELEASED` | Card payment succeeds, capture succeeds, escrow is released, clearing and settlement complete. | Positive success-chain rows for amount, fee, and settlement consistency. |
+| `WALLET_DIGITAL_SERVICE_RELEASED` | Wallet payment succeeds with instant buyer confirmation. | Same success-chain invariants across a different payment method. |
+| `BANK_TRANSFER_B2B_ESCROW_RELEASED` | Bank-transfer B2B payment succeeds and releases after acceptance. | Larger B2B-style amounts with the same settlement invariants. |
+| `CARD_AUTHORIZATION_FAILED` | Card authorization fails before capture. | Teaches rules to require `payment_status = 'PAID'` and `acquiring_status = 'CAPTURED'`. |
+| `BUYER_CANCELLED_BEFORE_CAPTURE` | Buyer cancels before payment capture. | Prevents rules from treating canceled records as capture or settlement mismatches. |
+| `ESCROW_AWAITING_BUYER_CONFIRMATION` | Payment is captured and held, but release is still pending. | Teaches release and settlement rules to require release/clearing preconditions. |
+| `CLEARING_DELAYED_AFTER_RELEASE` | Escrow is released, but clearing and settlement are still pending. | Teaches settlement rules to require `clearing_status = 'CLEARED'` and `settlement_status = 'SETTLED'`. |
 
 Model identity:
 
@@ -387,14 +447,14 @@ Data split:
 
 | File | Records | Purpose |
 | --- | ---: | --- |
-| `datasets/train.jsonl` | 80 | Clean assembled records with success, failed, canceled, pending, and delayed status flows for rule training. |
+| `datasets/train.jsonl` | 160 | Clean assembled records with success, failed, canceled, pending, and delayed status flows for rule training. |
 | `datasets/test.jsonl` | 24 | Clean validation set with the same status mix. |
-| `datasets/test-with-anomaly.jsonl` | 24 | Validation set with four controlled success-chain amount mismatches. |
+| `datasets/test-with-anomaly.jsonl` | 4 | Anomaly-only validation records with controlled success-chain amount mismatches. |
 
-The anomaly fixture keeps all join keys intact and injects mismatches into
-acquiring capture amount, escrow release amount, clearing fee amount, and
-merchant settlement amount. These should produce incidents when success-chain
-rules are active.
+The anomaly fixture is intentionally small. It keeps all join keys intact and
+injects mismatches into acquiring capture amount, escrow release amount,
+clearing fee amount, and merchant settlement amount. These should produce
+incidents when success-chain rules are active.
 
 ## Generated Rule Candidates
 
@@ -414,7 +474,26 @@ The checked-in `examples/body-files/rule.json` uses the settlement rule because
 
 ## Sample Assets
 
-Synthetic demo assets live under:
+Installed CLI users should download the public synthetic demo assets:
+
+```bash
+dl demo pull
+dl demo pull --out ./driftledger-demo
+dl demo pull --force
+```
+
+By default, `dl demo pull` writes to:
+
+```text
+~/.driftledger/samples/merchant-payment-escrow-reconciliation
+```
+
+Use `--out <dir>` for a project-local copy, `--force` to refresh existing
+files, and `--source-base <url>` or `DRIFTLEDGER_DEMO_BASE_URL` for a mirror.
+The command prints JSON with `root`, each file status, and upload command
+templates.
+
+The source assets in this repository live under:
 
 ```text
 samples/merchant-payment-escrow-reconciliation
@@ -424,7 +503,7 @@ Files:
 
 - `datasets/train.jsonl`: clean assembled records for rule training.
 - `datasets/test.jsonl`: clean assembled records for validation.
-- `datasets/test-with-anomaly.jsonl`: controlled success-chain mismatches for incident verification.
+- `datasets/test-with-anomaly.jsonl`: four anomaly-only records for incident verification.
 - `models/demo_model.jsonl`: synthetic reconciliation model for the same scenario.
 - `manifest.json`: fixture metadata, scenario name, counts, and privacy notes.
 - `README.md`: dataset-local scenario notes and privacy guard details.
@@ -505,7 +584,7 @@ dl-agent/
       datasets/
         train.jsonl              clean assembled records for training
         test.jsonl               clean assembled records for validation
-        test-with-anomaly.jsonl  validation records with four controlled mismatches
+        test-with-anomaly.jsonl  four anomaly-only records for incident verification
       models/
         demo_model.jsonl         synthetic reconciliation model
       manifest.json              sample metadata and privacy notes
@@ -589,6 +668,7 @@ Workspace, metadata, and data:
 ```bash
 dl workspace list
 dl workspace create --name "Default"
+dl metadata col-types
 dl metadata upsert --body-file meta.json
 dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
 dl source-binding upsert --body-file binding.json
@@ -609,6 +689,7 @@ dl check-model enable --id <riskModelId>
 dl infer-task submit --body-file infer-task.json
 dl infer-task status --task <inferTaskId>
 dl infer-task progress --task <inferTaskId>
+dl rule types
 dl rule add --body-file rule.json
 dl rule list
 dl rule-forest build

@@ -11,38 +11,31 @@
     {
       "fieldName": "payment_id",
       "primaryKey": true,
-      "joinKey": true,
-      "types": ["STRING"]
+      "joinKey": true
     },
     {
       "fieldName": "order_no",
-      "joinKey": true,
-      "types": ["STRING"]
+      "joinKey": true
     },
     {
       "fieldName": "merchant_id",
-      "joinKey": true,
-      "types": ["STRING"]
+      "joinKey": true
     },
     {
       "fieldName": "payment_status",
-      "riskLevel": "HIGH",
-      "types": ["STRING"]
+      "riskLevel": "HIGH"
     },
     {
       "fieldName": "payment_amount",
-      "riskLevel": "HIGH",
-      "types": ["DECIMAL"]
+      "riskLevel": "HIGH"
     },
     {
       "fieldName": "fee_amount",
-      "riskLevel": "HIGH",
-      "types": ["DECIMAL"]
+      "riskLevel": "HIGH"
     },
     {
       "fieldName": "net_amount",
-      "riskLevel": "HIGH",
-      "types": ["DECIMAL"]
+      "riskLevel": "HIGH"
     }
   ]
 }

@@ -1,10 +1,14 @@
 const assert = require('node:assert/strict');
+const path = require('node:path');
 const test = require('node:test');
 
 const {
   agentInstruction,
+  buildDemoPullPlan,
   buildEndpoint,
+  DEFAULT_DEMO_SCENARIO,
   extractAuthToken,
+  HELP,
   parseArgv,
   resolveRuntimeConfig,
 } = require('../src/core');
@@ -77,6 +81,14 @@ test('buildEndpoint maps high-level CLI commands to backend atoms', () => {
     buildEndpoint(['incidents', 'list'], {workspace: 'sp_001'}).path,
     '/api/v1/incidents/sp_001',
   );
+  assert.deepEqual(buildEndpoint(['metadata', 'col-types'], {workspace: 'sp_001'}), {
+    method: 'GET',
+    path: '/api/v1/meta/field/col-types',
+  });
+  assert.deepEqual(buildEndpoint(['rule', 'types'], {workspace: 'sp_001'}), {
+    method: 'GET',
+    path: '/api/v1/rule/types',
+  });
 });
 
 test('buildEndpoint exposes rule training and RuleForest atoms without raw api request', () => {
@@ -139,6 +151,35 @@ test('buildEndpoint exposes alert channel and delivery atoms without raw api req
   });
 });
 
+test('buildDemoPullPlan prepares downloadable demo assets for installed CLI users', () => {
+  const plan = buildDemoPullPlan({
+    flags: {out: 'tmp/driftledger-demo', sourceBase: 'https://assets.example/driftledger-demo'},
+  });
+
+  assert.equal(plan.scenario, DEFAULT_DEMO_SCENARIO);
+  assert.equal(plan.root, path.resolve('tmp/driftledger-demo'));
+  assert.deepEqual(
+    plan.files.map((file) => file.relativePath),
+    [
+      'README.md',
+      'manifest.json',
+      'datasets/train.jsonl',
+      'datasets/test.jsonl',
+      'datasets/test-with-anomaly.jsonl',
+      'models/demo_model.jsonl',
+    ],
+  );
+  assert.equal(plan.files[0].url, 'https://assets.example/driftledger-demo/README.md');
+  assert.equal(plan.files.at(-1).outputPath, path.resolve('tmp/driftledger-demo/models/demo_model.jsonl'));
+  assert.match(plan.commands.uploadTrain, /dl dataset upload-assembled/);
+  assert.match(plan.commands.uploadTrain, /tmp\/driftledger-demo\/datasets\/train\.jsonl/);
+  assert.match(plan.commands.uploadAnomalyTest, /test-with-anomaly\.jsonl/);
+});
+
+test('help surfaces the CLI demo download entrypoint', () => {
+  assert.match(HELP, /dl demo pull/);
+});
+
 test('extractAuthToken reads AUTH_TOKEN from set-cookie headers', () => {
   const token = extractAuthToken([
     'LANG=en; Path=/',
@@ -163,6 +204,8 @@ test('agentInstruction covers Codex, Claude, OpenClaw, and generic agent install
     assert.match(instruction, /npm install -g @driftledger\/cli/);
     assert.match(instruction, /dl config set --workspace sp_demo/);
     assert.match(instruction, /skills\/driftledger-cli/);
+    assert.match(instruction, /dl metadata col-types/);
+    assert.match(instruction, /dl rule types/);
     assert.match(instruction, /rule-forest build/);
     assert.match(instruction, /alerts test/);
   }

@@ -7,7 +7,7 @@ phone numbers, addresses, or identity documents.
 
 - Demo model ID: `DL_SYNTH_MERCHANT_ESCROW_001`
 - Scenario: `merchant-payment-escrow-reconciliation`
-- Train records: 80
+- Train records: 160
 - Test records: 24
 - Controlled anomaly records: 4
 
@@ -45,13 +45,13 @@ phone numbers, addresses, or identity documents.
 - `models/demo_model.jsonl`: synthetic reconciliation model.
 - `datasets/train.jsonl`: clean assembled records for rule training.
 - `datasets/test.jsonl`: clean assembled records for validation.
-- `datasets/test-with-anomaly.jsonl`: validation records with four controlled amount mismatches.
+- `datasets/test-with-anomaly.jsonl`: four anomaly-only records for incident verification.
 - `manifest.json`: generation metadata, join keys, counts, and privacy notes.
 
 ## Controlled Anomalies
 
-`datasets/test-with-anomaly.jsonl` keeps all join keys intact and injects four
-success-chain field mismatches:
+`datasets/test-with-anomaly.jsonl` contains only four success-chain records
+with injected field mismatches. It keeps all join keys intact:
 
 - `ACQUIRING_CAPTURE_AMOUNT_MISMATCH`: acquiring captured amount differs from payment amount.
 - `ESCROW_RELEASE_AMOUNT_MISMATCH`: release amount differs from held escrow amount.
