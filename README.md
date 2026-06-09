@@ -5,59 +5,29 @@
 <h1 align="center">dl-agent</h1>
 
 <p align="center">
-  Agent-facing command line tools, instructions, examples, and sample assets for DriftLedger.
+  Agent-facing CLI, skills, examples, and synthetic sample assets for DriftLedger.
 </p>
 
 <p align="center">
   <a href="https://driftledger.fatclaw.com/cli">CLI Guide</a>
   ·
-  <a href="docs/architecture.md">Architecture</a>
+  <a href="docs/workflows.md">Workflows</a>
+  ·
+  <a href="docs/commands.md">Commands</a>
   ·
   <a href="docs/publishing.md">Publishing</a>
 </p>
 
-`dl-agent` is the distribution layer that lets shell-capable agents use DriftLedger without screen scraping the web console. It packages the public CLI, install script, agent instruction templates, request body examples, synthetic demo assets, skills, and future MCP assets in one repository.
+`dl-agent` helps shell-capable agents use DriftLedger without operating the web
+console. It packages the `dl` command, install guidance, reusable agent
+instructions, skills, request-body examples, and synthetic demo data.
 
-The first package is `@driftledger/cli`, exposed as both:
-
-- `dl`: short command for agents and day-to-day shell use.
-- `driftledger`: long command for compatibility and public documentation.
-
-## What You Can Do
-
-- Install the DriftLedger CLI from a hosted bash script or local checkout.
-- Connect Codex, Claude Code, OpenClaw, CI jobs, and generic shell agents.
-- Create or select a workspace.
-- Upload raw CSV table exports or assembled JSONL reconciliation data.
-- Create metadata, source bindings, reconciliation models, rules, and execution tasks.
-- Inspect execution result indexes and incidents through JSON output.
-- Configure email or webhook alert channels and inspect delivery logs after a run.
-- Download and reuse synthetic demo assets for training, validation, and incident smoke tests.
-
-## Product Vocabulary
-
-Use these names consistently in agent instructions, website copy, command help,
-and examples:
-
-| Term | Meaning |
-| --- | --- |
-| Workspace | Isolation boundary for metadata, data, reconciliation models, rules, runs, incidents, and one compiled RuleForest. |
-| Table metadata | Registered source table shape, ownership, risk level, and descriptive context. |
-| Field metadata | Registered field shape, optional algorithm type hints, join-key flags, primary-key flags, and risk level. Omit type hints unless you need to constrain inference. |
-| Raw table data | CSV exports that preserve the original source-table identity. |
-| Assembled data | JSONL records that already join related source rows into reconciliation samples. |
-| Reconciliation model | The configured model for one business scenario. It defines table relationships, assembly scope, and the parent object for rules. The CLI command group is `check-model` for backend compatibility. |
-| Rule | Human-reviewed invariant attached to a reconciliation model. Rules may come from training, manual creation, or migration. |
-| RuleForest | Workspace-level compiled rule artifact loaded by execution for faster rule evaluation. |
-| Incident | Exception event produced by a run, including rule, evidence rows, and handling state. |
-| Alert channel | Workspace-level email or webhook route used to notify users when a run opens incidents. |
-| Alert delivery | Delivery log for test alerts and incident notifications, optionally filtered by execution task. |
-
-The MVP supports two data paths:
+Use it for the MVP loop:
 
 ```text
-Raw table data -> metadata -> source binding -> assembly -> assembled data -> reconciliation model -> rules -> RuleForest -> alert channel -> run -> incidents -> alert delivery
-Assembled data -------------------------------------------------------------------------------> reconciliation model -> rules -> RuleForest -> alert channel -> run -> incidents -> alert delivery
+install CLI -> authenticate -> download demo or upload CSV/JSONL -> create model
+-> train or add rules -> build RuleForest -> run checks -> inspect incidents
+-> verify alert delivery
 ```
 
 ## Install
@@ -68,12 +38,15 @@ Hosted install:
 curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
 dl config set --api-url https://driftledger.fatclaw.com
 dl auth login --email you@example.com --password "<password>"
+dl doctor
 ```
 
 npm install:
 
 ```bash
 npm install -g @driftledger/cli
+dl config set --api-url https://driftledger.fatclaw.com
+dl auth login --email you@example.com --password "<password>"
 dl doctor
 ```
 
@@ -87,6 +60,8 @@ npm install -g ./packages/cli
 dl config set --api-url http://localhost:8088
 dl doctor
 ```
+
+`dl` is the short command. `driftledger` remains available as the long alias.
 
 ## Agent Setup
 
@@ -107,22 +82,18 @@ export DRIFTLEDGER_TOKEN="<jwt>"
 export DRIFTLEDGER_WORKSPACE_ID="Default"
 ```
 
-Configuration precedence is:
+Workspace defaults to `Default` when `--workspace`,
+`DRIFTLEDGER_WORKSPACE_ID`, and local config are all omitted. Pass
+`--workspace <spId>` only when the user explicitly chooses another workspace.
 
-```text
-CLI flags > environment variables > ~/.driftledger/config.json > Default
-```
+Do not commit tokens, passwords, cookies, raw account numbers, webhook secrets,
+or company data into generated agent files.
 
-If no workspace is provided by `--workspace`, `DRIFTLEDGER_WORKSPACE_ID`, or
-local config, `dl` uses `Default`. Pass `--workspace <spId>` only when an agent
-should operate outside the default workspace.
+## Skills
 
-## Skill Setup
+The CLI is the runtime interface. Skills teach agents the preferred workflow.
 
-The CLI is the runtime interface. Skills are optional workflow packages that
-teach an agent how to use the CLI without rediscovering the sequence each time.
-
-Install the DriftLedger skills for Codex:
+Codex:
 
 ```bash
 mkdir -p ~/.codex/skills
@@ -130,7 +101,7 @@ cp -R skills/driftledger-cli ~/.codex/skills/
 cp -R skills/driftledger-incident-review ~/.codex/skills/
 ```
 
-Install the same skills for Claude Code:
+Claude Code:
 
 ```bash
 mkdir -p ~/.claude/skills
@@ -138,214 +109,88 @@ cp -R skills/driftledger-cli ~/.claude/skills/
 cp -R skills/driftledger-incident-review ~/.claude/skills/
 ```
 
-For OpenClaw or a generic shell agent, keep the skills in the repository and
-generate a project instruction file:
+Use `skills/driftledger-cli` for install, workspace, metadata, upload, model,
+rule, RuleForest, alert, run, and incident commands. Use
+`skills/driftledger-incident-review` after a run creates incidents and alert
+delivery logs.
 
-```bash
-dl agent init openclaw --out OPENCLAW.md
-dl agent init generic --out AGENT.md
-```
+## Demo Assets
 
-Use `skills/driftledger-cli` for installation, workspace, metadata, data,
-model, rule, RuleForest, alert, run, and incident commands. Use
-`skills/driftledger-incident-review` after a run creates incidents and delivery
-logs.
-
-## How To Use DriftLedger With An Agent
-
-This is the recommended step-by-step sequence for Codex, Claude Code, OpenClaw,
-CI, and other shell-capable agents.
-
-### 1. Install and verify the CLI
-
-```bash
-command -v dl >/dev/null || npm install -g @driftledger/cli
-dl doctor
-```
-
-For local development from this repository:
-
-```bash
-npm install
-npm install -g ./packages/cli
-dl config set --api-url http://localhost:8088
-dl doctor
-```
-
-### 2. Configure API, authentication, and optional workspace override
-
-```bash
-dl config set --api-url https://driftledger.fatclaw.com
-dl auth login --email you@example.com --password "<password>"
-dl auth verify
-dl workspace list
-dl workspace create --name "Default"
-```
-
-`Default` is used automatically when no workspace is specified. Use
-`dl workspace activate --workspace <spId>` or `--workspace <spId>` only when the
-user chooses a different workspace.
-
-Hosted agents can use environment variables instead of local config:
-
-```bash
-export DRIFTLEDGER_API_URL="https://driftledger.fatclaw.com"
-export DRIFTLEDGER_TOKEN="<jwt>"
-export DRIFTLEDGER_WORKSPACE_ID="Default"
-```
-
-### 3. Generate the agent instruction file
-
-```bash
-dl agent init codex --out AGENTS.md
-dl agent init claude --out CLAUDE.md
-dl agent init openclaw --out OPENCLAW.md
-dl agent init generic --out AGENT.md
-```
-
-Commit the instruction file only after confirming it contains no tokens,
-passwords, cookies, raw account numbers, webhook secrets, or company data.
-
-### 4. Download demo assets or choose the data path
-
-The npm CLI package does not bundle sample files. For the public
-merchant-payment-escrow scenario, download the synthetic assets with the CLI:
+The npm package does not bundle sample files. Download the public synthetic
+merchant-payment-escrow scenario with the CLI:
 
 ```bash
 dl demo pull
-# Default root:
+# default root:
 # ~/.driftledger/samples/merchant-payment-escrow-reconciliation
 
-# Optional explicit project-local copy:
 dl demo pull --out ./driftledger-demo
 ```
 
-The command prints JSON with `root`, downloaded `files`, and ready-to-adapt
-upload commands. Agents should read `root` from that output when possible.
+`dl demo pull` prints JSON with `root`, file status, and ready-to-adapt upload
+commands. Use `--force` to refresh files, and `--source-base <url>` or
+`DRIFTLEDGER_DEMO_BASE_URL` when an agent needs a mirror.
 
-Use the assembled-data path when another job has already produced joined JSONL:
+The scenario is fully synthetic. It models:
 
-```bash
-DEMO_ROOT="${DRIFTLEDGER_DEMO_DIR:-$HOME/.driftledger/samples/merchant-payment-escrow-reconciliation}"
-dl dataset create-assembled --display-name merchant-payment-escrow
-dl dataset upload-assembled --dataset <datasetId> --file "$DEMO_ROOT/datasets/train.jsonl"
+```text
+merchant_order -> payment_order -> acquiring_transaction
+              -> escrow_ledger -> escrow_release
+              -> clearing_record -> settlement_record
 ```
 
-Use the raw-table path when the user uploads CSV exports and DriftLedger should
-preserve table identity before assembly:
+Included data:
 
-```bash
-dl metadata col-types
-dl metadata upsert --body-file examples/body-files/meta.json
-dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
-dl source-binding upsert --body-file examples/body-files/binding.json
-dl dataset create-raw --display-name payment-order --binding-id <bindingId>
-dl dataset upload --dataset <datasetId> --file payment_order.csv
-dl assembly submit --body-file examples/body-files/assembly.json
-dl assembly run --task <assemblyTaskId>
-```
+| File | Records | Purpose |
+| --- | ---: | --- |
+| `datasets/train.jsonl` | 160 | Clean assembled records for rule training. |
+| `datasets/test.jsonl` | 24 | Clean validation records. |
+| `datasets/test-with-anomaly.jsonl` | 4 | Controlled anomaly records for incident verification. |
+| `models/demo_model.jsonl` | 1 | Synthetic reconciliation model. |
 
-Field `types` in metadata are optional. If an agent provides them, use only
-values returned by `dl metadata col-types`, not SQL or file-parser types such as
-`STRING`, `DECIMAL`, or `DATETIME`.
+The anomaly records keep join keys intact and only change checked field values,
+so incidents come from business mismatches rather than broken assembly.
 
-### 5. Create the reconciliation model
+## MVP Run
 
-The reconciliation model defines table relationships, assembly scope, and the
-parent object for rules.
-
-```bash
-dl check-model create --body-file examples/body-files/check-model.json
-dl check-model deploy --id <riskModelId>
-dl check-model enable --id <riskModelId>
-```
-
-### 6. Train or add rules
-
-Use training when sample data is available:
-
-```bash
-dl infer-task submit --body-file examples/body-files/infer-task.json
-dl infer-task progress --task <inferTaskId>
-```
-
-Add a reviewed rule before execution:
-
-```bash
-dl rule types
-dl rule add --body-file examples/body-files/rule.json
-dl rule list
-```
-
-Manual rule payloads must use a `ruleType` returned by `dl rule types`.
-
-### 7. Build RuleForest
-
-Rule changes should be compiled into the workspace RuleForest before execution.
-
-```bash
-dl rule-forest build
-dl rule-forest status
-```
-
-### 8. Configure alert delivery
-
-MVP runs should have at least one alert channel before production execution.
-
-```bash
-dl alerts upsert --body-file examples/body-files/alert-email-channel.json
-dl alerts upsert --body-file examples/body-files/alert-webhook-channel.json
-dl alerts list
-dl alerts test --channel <channelId>
-```
-
-### 9. Run checks and inspect incidents
-
-```bash
-dl run submit --body-file examples/body-files/run.json
-dl run run --task <taskId>
-dl run indexes --task <taskId>
-dl incidents task --task <taskId>
-dl alerts deliveries --task <taskId>
-```
-
-### 10. Review and hand off
-
-Use `skills/driftledger-incident-review` to summarize rule failures, evidence
-rows, alert delivery state, owner, likely cause, and next action without exposing
-raw company identifiers.
-
-## MVP Workflow
-
-Start with workspace and authentication:
+Start with authentication and workspace discovery:
 
 ```bash
 dl doctor
 dl auth verify
 dl workspace list
-# Default is used automatically when no workspace is specified.
-# Override only when operating outside Default:
-dl config set --workspace <spId>
 ```
 
-The commands below use the downloadable merchant-payment-escrow reconciliation
-demo. It is the fastest path for an agent to prove the complete DriftLedger
-flow: upload assembled data, create a reconciliation model, add rules, execute
-validation, and inspect incidents.
-
-Use the assembled-data path when another job already produced joined reconciliation rows:
+Use assembled JSONL when related source rows are already joined:
 
 ```bash
 dl demo pull
 DEMO_ROOT="${DRIFTLEDGER_DEMO_DIR:-$HOME/.driftledger/samples/merchant-payment-escrow-reconciliation}"
+
 dl dataset create-assembled --display-name merchant-payment-escrow
 dl dataset upload-assembled --dataset <datasetId> --file "$DEMO_ROOT/datasets/train.jsonl"
 dl dataset create-assembled --display-name merchant-payment-escrow-anomaly
 dl dataset upload-assembled --dataset <anomalyDatasetId> --file "$DEMO_ROOT/datasets/test-with-anomaly.jsonl"
+```
+
+Use raw CSV when DriftLedger should preserve table identity before assembly:
+
+```bash
+dl metadata col-types
+dl metadata upsert --body-file examples/body-files/meta.json
+dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
+dl source-binding upsert --body-file examples/body-files/binding.json
+dl dataset create-raw --display-name payment-order --binding-id <bindingId>
+dl dataset upload --dataset <datasetId> --file payment_order.csv
+dl assembly submit --body-file examples/body-files/assembly.json
+dl assembly run --task <assemblyTaskId>
+```
+
+Then create the model, produce executable rules, run checks, and inspect the
+closed alert loop:
+
+```bash
 dl check-model create --body-file examples/body-files/check-model.json
-# Replace <riskModelCode>, <riskModelVersion>, <riskModelId>, <trainingAssembledDatasetId>,
-# and <anomalyAssembledDatasetId>
-# in examples/body-files/*.json with the IDs returned by the previous commands.
 dl infer-task submit --body-file examples/body-files/infer-task.json
 dl infer-task progress --task <inferTaskId>
 dl rule types
@@ -360,407 +205,56 @@ dl incidents task --task <taskId>
 dl alerts deliveries --task <taskId>
 ```
 
-Use the raw-table path when DriftLedger should preserve source-table identity before assembly:
+Notes:
 
-```bash
-dl metadata col-types
-dl metadata upsert --body-file examples/body-files/meta.json
-dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
-dl source-binding upsert --body-file examples/body-files/binding.json
-dl dataset create-raw --display-name payment-order --binding-id <bindingId>
-dl dataset upload --dataset <datasetId> --file payment_order.csv
-dl assembly submit --body-file examples/body-files/assembly.json
-dl assembly run --task <assemblyTaskId>
-```
+- Field `types` in metadata are optional. If provided, use only values returned
+  by `dl metadata col-types`.
+- Manual rule payloads must use a `ruleType` returned by `dl rule types`.
+- Rule changes should be compiled with `dl rule-forest build` before execution.
+- MVP runs should configure email or webhook alerts before production use.
 
-## Demo Scenario
+## Concepts
 
-`samples/merchant-payment-escrow-reconciliation` is fully synthetic and models a
-merchant order paid through an acquiring flow, held in escrow, released after
-buyer confirmation, cleared, and settled to the merchant. DriftLedger assembles
-those source rows into one reconciliation record and checks that linkage keys,
-success statuses, fees, and money amounts remain consistent. The training data
-also includes payment failures, buyer cancellations, pending buyer confirmation,
-and delayed clearing so trained rules can learn meaningful preconditions.
-
-Business flow and table relationship design:
-
-```mermaid
-flowchart LR
-  subgraph ORDER["1. Merchant order"]
-    MO["driftledger.merchant_order<br/>order_no<br/>merchant_id<br/>order_status"]
-  end
-
-  subgraph PAY["2. Payment"]
-    PO["driftledger.payment_order<br/>payment_id<br/>order_no<br/>payment_status<br/>payment_amount, fee_amount, net_amount"]
-  end
-
-  subgraph ACQUIRE["3. Acquiring capture"]
-    ACQ["driftledger.acquiring_transaction<br/>payment_id<br/>acquiring_status<br/>capture_amount, fee_amount, net_amount"]
-  end
-
-  subgraph ESCROW["4. Escrow hold and release"]
-    ESC["driftledger.escrow_ledger<br/>escrow_id<br/>payment_id<br/>escrow_status<br/>escrow_amount"]
-    REL["driftledger.escrow_release<br/>escrow_id<br/>release_status<br/>release_amount"]
-  end
-
-  subgraph SETTLE["5. Clearing and settlement"]
-    CLR["driftledger.clearing_record<br/>payment_id<br/>settlement_batch_no<br/>merchant_id<br/>clearing_status<br/>fee_amount, net_amount"]
-    SET["driftledger.settlement_record<br/>settlement_batch_no<br/>merchant_id<br/>settlement_status<br/>settlement_amount"]
-  end
-
-  MO -- "order_no" --> PO
-  PO -- "payment_id" --> ACQ
-  PO -- "payment_id" --> ESC
-  ESC -- "escrow_id" --> REL
-  PO -- "payment_id" --> CLR
-  CLR -- "settlement_batch_no + merchant_id" --> SET
-```
-
-The same assembled record carries all seven tables in `tableDataMap`. Join keys
-are preserved even in anomaly records, so incidents are caused by checked field
-values rather than broken assembly.
-
-Scenario coverage:
-
-| Scenario profile | Path covered | Rule-learning purpose |
-| --- | --- | --- |
-| `CARD_GOODS_ESCROW_RELEASED` | Card payment succeeds, capture succeeds, escrow is released, clearing and settlement complete. | Positive success-chain rows for amount, fee, and settlement consistency. |
-| `WALLET_DIGITAL_SERVICE_RELEASED` | Wallet payment succeeds with instant buyer confirmation. | Same success-chain invariants across a different payment method. |
-| `BANK_TRANSFER_B2B_ESCROW_RELEASED` | Bank-transfer B2B payment succeeds and releases after acceptance. | Larger B2B-style amounts with the same settlement invariants. |
-| `CARD_AUTHORIZATION_FAILED` | Card authorization fails before capture. | Teaches rules to require `payment_status = 'PAID'` and `acquiring_status = 'CAPTURED'`. |
-| `BUYER_CANCELLED_BEFORE_CAPTURE` | Buyer cancels before payment capture. | Prevents rules from treating canceled records as capture or settlement mismatches. |
-| `ESCROW_AWAITING_BUYER_CONFIRMATION` | Payment is captured and held, but release is still pending. | Teaches release and settlement rules to require release/clearing preconditions. |
-| `CLEARING_DELAYED_AFTER_RELEASE` | Escrow is released, but clearing and settlement are still pending. | Teaches settlement rules to require `clearing_status = 'CLEARED'` and `settlement_status = 'SETTLED'`. |
-
-Model identity:
-
-- Sample asset model ID: `DL_SYNTH_MERCHANT_ESCROW_001`
-- Sample asset version: `synthetic-v1`
-- Backend risk model code: returned by `dl check-model create`; use it as
-  `<riskModelCode>` in rule payloads.
-- Trigger table: `driftledger.payment_order`
-- Trigger filter: `driftledger.payment_order.payment_status == 'PAID'`
-- Data shape: assembled JSONL records with `tableDataMap` entries for all joined tables.
-
-Data split:
-
-| File | Records | Purpose |
-| --- | ---: | --- |
-| `datasets/train.jsonl` | 160 | Clean assembled records with success, failed, canceled, pending, and delayed status flows for rule training. |
-| `datasets/test.jsonl` | 24 | Clean validation set with the same status mix. |
-| `datasets/test-with-anomaly.jsonl` | 4 | Anomaly-only validation records with controlled success-chain amount mismatches. |
-
-The anomaly fixture is intentionally small. It keeps all join keys intact and
-injects mismatches into acquiring capture amount, escrow release amount,
-clearing fee amount, and merchant settlement amount. These should produce
-incidents when success-chain rules are active.
-
-## Generated Rule Candidates
-
-These representative rules are the demo rules an agent should create or expect
-from training on this fixture:
-
-| Rule | What it protects |
+| Term | Meaning |
 | --- | --- |
-| `driftledger.payment_order#payment_amount = driftledger.acquiring_transaction#capture_amount WHERE driftledger.payment_order#payment_status = 'PAID' AND driftledger.acquiring_transaction#acquiring_status = 'CAPTURED'` | A paid and captured order must be captured for the same amount. |
-| `driftledger.payment_order#payment_amount = driftledger.escrow_ledger#escrow_amount WHERE driftledger.payment_order#payment_status = 'PAID' AND driftledger.escrow_ledger#escrow_status = 'HELD'` | A paid order held in escrow must hold the paid amount. |
-| `driftledger.escrow_ledger#escrow_amount = driftledger.escrow_release#release_amount WHERE driftledger.escrow_ledger#escrow_status = 'HELD' AND driftledger.escrow_release#release_status = 'RELEASED'` | Buyer-confirmed release must release the held amount. |
-| `driftledger.payment_order#fee_amount = driftledger.clearing_record#fee_amount WHERE driftledger.payment_order#payment_status = 'PAID' AND driftledger.clearing_record#clearing_status = 'CLEARED'` | Clearing fee must match the payment fee. |
-| `driftledger.clearing_record#net_amount = driftledger.settlement_record#settlement_amount WHERE driftledger.clearing_record#clearing_status = 'CLEARED' AND driftledger.settlement_record#settlement_status = 'SETTLED'` | Merchant settlement must pay the cleared net amount. |
-
-The checked-in `examples/body-files/rule.json` uses the settlement rule because
-`datasets/test-with-anomaly.jsonl` is built to fail it deterministically.
-
-## Sample Assets
-
-Installed CLI users should download the public synthetic demo assets:
-
-```bash
-dl demo pull
-dl demo pull --out ./driftledger-demo
-dl demo pull --force
-```
-
-By default, `dl demo pull` writes to:
-
-```text
-~/.driftledger/samples/merchant-payment-escrow-reconciliation
-```
-
-Use `--out <dir>` for a project-local copy, `--force` to refresh existing
-files, and `--source-base <url>` or `DRIFTLEDGER_DEMO_BASE_URL` for a mirror.
-The command prints JSON with `root`, each file status, and upload command
-templates.
-
-The source assets in this repository live under:
-
-```text
-samples/merchant-payment-escrow-reconciliation
-```
-
-Files:
-
-- `datasets/train.jsonl`: clean assembled records for rule training.
-- `datasets/test.jsonl`: clean assembled records for validation.
-- `datasets/test-with-anomaly.jsonl`: four anomaly-only records for incident verification.
-- `models/demo_model.jsonl`: synthetic reconciliation model for the same scenario.
-- `manifest.json`: fixture metadata, scenario name, counts, and privacy notes.
-- `README.md`: dataset-local scenario notes and privacy guard details.
-
-Privacy guard:
-
-```bash
-npm run verify:samples
-```
-
-Regenerate deterministic synthetic samples:
-
-```bash
-npm run sync:samples
-```
-
-`sync:samples` generates the records locally and writes to `samples/merchant-payment-escrow-reconciliation`; it does not read company fixtures or sibling repositories.
-
-## Repository Layout
-
-The repository is organized by distribution surface. Keep CLI runtime code,
-agent instructions, workflow docs, request bodies, synthetic samples, release
-scripts, skill packages, and future MCP wrappers in separate directories so
-agents can update one surface without touching the others.
-
-```text
-dl-agent/
-  package.json                   npm workspace scripts, package metadata, and Node.js engine contract
-  package-lock.json              reproducible dependency lockfile
-  .env.example                   local CLI/API configuration example, no secrets
-  .editorconfig                  editor defaults for portable formatting
-  .gitignore                     generated files and local environment exclusions
-  .github/
-    workflows/ci.yml             CI for CLI tests and sample privacy guard
-    ISSUE_TEMPLATE/              bug and feature templates
-      bug_report.md
-      feature_request.md
-    pull_request_template.md      PR checklist
-  agents/
-    AGENTS.md                    Codex instruction contract
-    CLAUDE.md                    Claude Code instruction contract
-    OPENCLAW.md                  OpenClaw instruction contract
-    AGENT.md                     generic shell-agent instruction contract
-  assets/
-    logo.svg                     README and website brand asset
-  docs/
-    architecture.md              maintainer architecture notes
-    commands.md                  command groups, aliases, and backend endpoints
-    publishing.md                npm, install-script, and GitHub release notes
-    workflows.md                 raw-table and assembled-data MVP flows
-  examples/
-    body-files/
-      meta.json                  table and field metadata request body
-      binding.json               source-column binding request body
-      assembly.json              raw-table assembly task request body
-      check-model.json           reconciliation model request body
-      infer-task.json            rule training task request body
-      rule.json                  confirmed rule request body
-      run.json                   execution task request body
-      alert-email-channel.json   email notification channel request body
-      alert-webhook-channel.json webhook notification channel request body
-  packages/
-    cli/                         npm package published as @driftledger/cli
-      package.json               package name, binary aliases, scripts, and publish metadata
-      bin/driftledger.js         executable entrypoint
-      src/cli.js                 command execution and HTTP transport
-      src/core.js                argument parsing, config precedence, endpoint mapping
-      test/core.test.js          CLI contract tests
-      README.md                  package-level usage notes
-  scripts/
-    install.sh                   hosted install script
-    sync-demo-assets.mjs         generate deterministic synthetic demo assets
-    verify-demo-assets.mjs       privacy guard for sample assets
-    README.md                    script-specific maintenance notes
-  samples/
-    merchant-payment-escrow-reconciliation/
-      README.md                  scenario notes and privacy guard explanation
-      datasets/
-        train.jsonl              clean assembled records for training
-        test.jsonl               clean assembled records for validation
-        test-with-anomaly.jsonl  four anomaly-only records for incident verification
-      models/
-        demo_model.jsonl         synthetic reconciliation model
-      manifest.json              sample metadata and privacy notes
-  skills/
-    README.md                    DriftLedger skill packaging surface
-    driftledger-cli/             CLI-first workflow skill package
-      SKILL.md                   install, auth, workspace, metadata, alerts, run workflow
-      examples/                  reusable command transcripts and body files
-      scripts/                   optional validators or setup helpers
-    driftledger-incident-review/ incident triage and remediation skill package
-      SKILL.md                   incident summarization, alert delivery, and remediation workflow
-      templates/                 report and handoff templates
-  mcp/                           future MCP server packaging surface
-    README.md                    MCP transport and tool contract notes
-  CHANGELOG.md                   release history
-  CODE_OF_CONDUCT.md             contributor behavior expectations
-  CONTRIBUTING.md                contribution workflow
-  LICENSE                        Apache-2.0 license text
-  SECURITY.md                    security reporting and data handling guidance
-```
-
-Directory responsibilities:
-
-| Directory | Owner surface | Change when |
-| --- | --- | --- |
-| `packages/cli` | `dl` / `driftledger` command runtime | Adding commands, changing config precedence, or updating API mappings. |
-| `agents` | Codex, Claude Code, OpenClaw, and generic agent instruction presets | Changing how agents should call the CLI or handle secrets. |
-| `examples/body-files` | Reviewable JSON payload templates | Backend request contracts change, or the MVP workflow needs a new request body. |
-| `samples/merchant-payment-escrow-reconciliation` | Synthetic model, train/test data, and anomaly fixture | Refreshing demo data, model structure, or privacy guard metadata. |
-| `scripts` | Install, synthetic sample generation, and privacy verification automation | Publishing install scripts or regenerating public samples. |
-| `skills` | Agent skill packages | Packaging DriftLedger workflows as reusable Codex/Claude/OpenClaw skills. |
-| `mcp` | Future MCP server or manifest packages | Exposing DriftLedger atoms as MCP tools instead of shell commands. |
-| `docs` | Maintainer architecture and publishing notes | Explaining package boundaries, release steps, or operational decisions. |
-
-Placeholder directories such as `skills/driftledger-cli` and `mcp` are committed
-early so future work has a stable target instead of adding ad-hoc top-level
-folders.
-
-## Extension Points
-
-Add new surfaces in the narrowest directory that owns the change:
-
-| Need | Put it in |
-| --- | --- |
-| A new backend atom exposed to agents | `packages/cli/src/core.js`, `packages/cli/src/cli.js`, and `packages/cli/test/core.test.js` |
-| A reusable request body | `examples/body-files` |
-| A new sample scenario | `samples/<semantic-scenario-name>` |
-| A privacy or data-shape guard | `scripts/verify-*.mjs` plus CI |
-| A Codex/Claude/OpenClaw instruction template | `agents` now, then `skills/<skill-name>` when packaged |
-| A future MCP transport | `mcp` |
-
-## Documentation Map
-
-- Start here when installing or validating the full agent workflow: `README.md`.
-- Use `packages/cli/README.md` for package-level CLI usage.
-- Use `docs/architecture.md` to understand package boundaries and command contracts.
-- Use `docs/commands.md` to inspect command groups, aliases, and backend endpoints.
-- Use `docs/workflows.md` for raw-table and assembled-data MVP flows.
-- Use `docs/publishing.md` before publishing the npm package or hosted install script.
-- Use `samples/merchant-payment-escrow-reconciliation/README.md` to understand the demo data, model, and anomaly fixture.
-- Use `scripts/README.md` when changing install, sync, or privacy verification scripts.
-- Use `skills/README.md` for Codex/Claude/OpenClaw workflow packaging boundaries.
-
-## Command Surface
-
-Core commands:
-
-```bash
-dl doctor
-dl version
-dl config get
-dl config set --api-url <url> --token <jwt>
-dl config set --workspace <spId>
-dl auth login --email <email> --password <password>
-dl auth verify
-dl auth refresh
-```
-
-Workspace, metadata, and data:
-
-```bash
-dl workspace list
-dl workspace create --name "Default"
-dl metadata col-types
-dl metadata upsert --body-file meta.json
-dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
-dl source-binding upsert --body-file binding.json
-dl dataset create-raw --display-name payment-order --binding-id <bindingId>
-dl dataset upload --dataset <datasetId> --file payment_order.csv
-dl assembly submit --body-file assembly.json
-dl assembly run --task <assemblyTaskId>
-dl dataset create-assembled --display-name assembled
-dl dataset upload-assembled --dataset <datasetId> --file assembled.jsonl
-```
-
-Models, rules, runs, and incidents:
-
-```bash
-dl check-model create --body-file check-model.json
-dl check-model deploy --id <riskModelId>
-dl check-model enable --id <riskModelId>
-dl infer-task submit --body-file infer-task.json
-dl infer-task status --task <inferTaskId>
-dl infer-task progress --task <inferTaskId>
-dl rule types
-dl rule add --body-file rule.json
-dl rule list
-dl rule-forest build
-dl rule-forest status
-dl run submit --body-file run.json
-dl run run --task <taskId>
-dl run indexes --task <taskId>
-dl incidents list
-dl incidents task --task <taskId>
-```
-
-Alerts and delivery logs:
-
-```bash
-dl alerts upsert --body-file examples/body-files/alert-email-channel.json
-dl alerts upsert --body-file examples/body-files/alert-webhook-channel.json
-dl alerts list
-dl alerts enable --channel <channelId>
-dl alerts disable --channel <channelId>
-dl alerts test --channel <channelId>
-dl alerts deliveries
-dl alerts deliveries --task <taskId>
-```
-
-## CLI Contract
-
-- Normal command responses are JSON on stdout.
-- Errors are structured JSON on stderr with `ok:false`.
-- Complex payloads should be stored in files and passed through `--body-file`.
-- Tokens should be provided through `DRIFTLEDGER_TOKEN` or local config, not prompts.
-- The MVP supports CSV for raw table uploads and JSONL for assembled reconciliation data.
+| Workspace | Isolation boundary for metadata, models, rules, runs, incidents, and one compiled RuleForest. |
+| Reconciliation model | Business scenario model that defines relationships and owns rules. CLI group: `check-model`. |
+| Assembled data | JSONL records that already join related source rows into reconciliation samples. |
+| Raw table data | CSV source-table exports that DriftLedger assembles before checking. |
+| RuleForest | Workspace-level compiled rule artifact loaded by execution. |
+| Incident | Exception event produced by a run, with rule, evidence rows, and handling state. |
+| Alert delivery | Email or webhook delivery log for test alerts and incident notifications. |
 
 ## Development
 
 ```bash
 npm install
-npm test
+npm run check
+```
+
+Sample maintenance:
+
+```bash
 npm run verify:samples
-npm run check
-npm run cli -- doctor
+npm run sync:samples
 ```
 
-Run the CLI package tests directly:
+`sync:samples` generates deterministic synthetic records locally. It does not
+read company fixtures or sibling repositories.
 
-```bash
-npm --workspace @driftledger/cli test
-```
+## More Documentation
 
-## Publishing
-
-Dry-run package publication:
-
-```bash
-npm run check
-npm --workspace @driftledger/cli pack --dry-run
-```
-
-The hosted installer should be served at:
-
-```text
-https://driftledger.fatclaw.com/install.sh
-```
+- `docs/workflows.md`: assembled-data and raw-table workflow details.
+- `docs/commands.md`: command groups, aliases, and backend endpoints.
+- `samples/merchant-payment-escrow-reconciliation/README.md`: demo scenario,
+  join keys, profiles, and anomaly design.
+- `skills/README.md`: skill installation and boundaries.
 
 ## Security
 
-- Do not commit tokens, passwords, cookies, or raw company datasets.
-- Do not commit real alert recipients, webhook URLs, or webhook secrets.
-- Run `npm run verify:samples` before publishing sample changes.
-- Keep user credentials out of generated agent instruction files.
-- Prefer environment variables for CI and hosted agents.
+See `SECURITY.md`. Public samples must remain synthetic and must not contain
+real accounts, order numbers, addresses, webhook secrets, or company exports.
 
 ## License
 
-Apache-2.0
+Apache-2.0.
