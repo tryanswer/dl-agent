@@ -117,6 +117,10 @@ test('buildEndpoint exposes rule training and RuleForest atoms without raw api r
 });
 
 test('buildEndpoint exposes alert channel and delivery atoms without raw api request', () => {
+  assert.deepEqual(buildEndpoint(['alerts', 'types']), {
+    method: 'GET',
+    path: '/api/v1/alerts/channel/types',
+  });
   assert.deepEqual(
     buildEndpoint(['alerts', 'upsert'], {
       workspace: 'sp_001',
@@ -133,6 +137,41 @@ test('buildEndpoint exposes alert channel and delivery atoms without raw api req
         channelType: 'EMAIL',
         minSeverity: 'HIGH',
         recipients: ['finance@example.com', 'ops@example.com'],
+      },
+    },
+  );
+  assert.deepEqual(
+    buildEndpoint(['alerts', 'slack'], {
+      workspace: 'sp_001',
+      webhookUrl: 'https://hooks.slack.com/services/T000/B000/REPLACE',
+      minSeverity: 'HIGH',
+    }),
+    {
+      method: 'POST',
+      path: '/api/v1/alerts/channel/upsert/sp_001',
+      body: {
+        displayName: 'Slack incident alerts',
+        channelType: 'SLACK',
+        minSeverity: 'HIGH',
+        webhookUrl: 'https://hooks.slack.com/services/T000/B000/REPLACE',
+      },
+    },
+  );
+  assert.deepEqual(
+    buildEndpoint(['alerts', 'telegram'], {
+      workspace: 'sp_001',
+      displayName: 'Telegram ops',
+      botToken: 'bot-token',
+      chatId: '-100123456',
+    }),
+    {
+      method: 'POST',
+      path: '/api/v1/alerts/channel/upsert/sp_001',
+      body: {
+        displayName: 'Telegram ops',
+        channelType: 'TELEGRAM',
+        botToken: 'bot-token',
+        chatId: '-100123456',
       },
     },
   );
@@ -232,6 +271,8 @@ test('agentInstruction covers Codex, Claude, OpenClaw, and generic agent install
     assert.match(instruction, /dl rule validate/);
     assert.match(instruction, /rule-forest build/);
     assert.match(instruction, /alerts test/);
+    assert.match(instruction, /alerts types/);
+    assert.match(instruction, /alerts slack/);
   }
 
   const defaultInstruction = agentInstruction('codex', {

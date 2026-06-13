@@ -132,7 +132,9 @@ dl rule types
 dl rule validate --body-file rule.json
 dl rule add --body-file rule.json
 dl rule-forest build
+dl alerts types
 dl alerts upsert --body-file alert-email-channel.json
+dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
 dl alerts test --channel <channelId>
 dl run submit --body-file run.json
 dl run run --task <taskId>
@@ -167,7 +169,9 @@ dl rule types
 dl rule validate --body-file rule.json
 dl rule add --body-file rule.json
 dl rule-forest build
+dl alerts types
 dl alerts upsert --body-file alert-email-channel.json
+dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
 dl alerts test --channel <channelId>
 dl run submit --body-file run.json
 dl run run --task <taskId>
@@ -177,9 +181,10 @@ dl alerts deliveries --task <taskId>
 
 All command responses are JSON so Codex, Claude Code, OpenClaw, and other
 agents can parse the output without screen scraping. Raw table uploads use CSV;
-assembled reconciliation data uses JSONL. Alert channels currently support email
-and webhook delivery, with delivery logs available for both test sends and
-incident notifications.
+assembled reconciliation data uses JSONL. Alert channels currently support
+email, Slack, generic webhook, Discord, Teams, Telegram, and Mattermost
+delivery. Delivery logs are available for both test sends and incident
+notifications.
 
 Use `dl` in scripts and agent instructions. `driftledger` remains available as a
 compatibility alias for older installs.

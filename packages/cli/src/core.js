@@ -18,6 +18,24 @@ const DEMO_FILES = [
   'datasets/test-with-anomaly.jsonl',
   'models/demo_model.jsonl',
 ];
+const ALERT_CHANNEL_ACTION_TYPES = {
+  email: 'EMAIL',
+  webhook: 'WEBHOOK',
+  slack: 'SLACK',
+  discord: 'DISCORD',
+  teams: 'TEAMS',
+  telegram: 'TELEGRAM',
+  mattermost: 'MATTERMOST',
+};
+const ALERT_CHANNEL_DEFAULT_NAMES = {
+  EMAIL: 'Email incident alerts',
+  WEBHOOK: 'Incident webhook',
+  SLACK: 'Slack incident alerts',
+  DISCORD: 'Discord incident alerts',
+  TEAMS: 'Teams incident alerts',
+  TELEGRAM: 'Telegram incident alerts',
+  MATTERMOST: 'Mattermost incident alerts',
+};
 
 class DriftLedgerCliError extends Error {
   constructor(message, details = {}) {
@@ -380,6 +398,20 @@ function buildEndpoint(positionals, flags = {}, runtime = {}) {
   }
 
   if (scope === 'alerts' || scope === 'alert') {
+    if (action === 'types' || action === 'channel-types') {
+      return {method: 'GET', path: '/api/v1/alerts/channel/types'};
+    }
+    if (ALERT_CHANNEL_ACTION_TYPES[action]) {
+      const channelType = ALERT_CHANNEL_ACTION_TYPES[action];
+      return {
+        method: 'POST',
+        path: `/api/v1/alerts/channel/upsert/${workspace()}`,
+        body: buildAlertChannelBody(flags, {
+          channelType,
+          defaultDisplayName: ALERT_CHANNEL_DEFAULT_NAMES[channelType],
+        }),
+      };
+    }
     if (action === 'upsert' || action === 'create' || action === 'update') {
       return {
         method: 'POST',
@@ -506,7 +538,7 @@ function buildSourceBindingBody(flags) {
   };
 }
 
-function buildAlertChannelBody(flags) {
+function buildAlertChannelBody(flags, defaults = {}) {
   const body = bodyFromKnownFlags(flags, [
     'id',
     'displayName',
@@ -515,7 +547,15 @@ function buildAlertChannelBody(flags) {
     'minSeverity',
     'webhookUrl',
     'webhookSecret',
+    'botToken',
+    'chatId',
   ]) || {};
+  if (defaults.channelType && body.channelType === undefined) {
+    body.channelType = defaults.channelType;
+  }
+  if (defaults.defaultDisplayName && body.displayName === undefined) {
+    body.displayName = defaults.defaultDisplayName;
+  }
   const recipients = firstPresent(flags.recipients, flags.recipient);
   if (recipients !== undefined) {
     body.recipients = asArray(recipients);
@@ -601,7 +641,8 @@ function agentInstruction(agent, config = {}) {
     'For preassembled data, upload JSONL with `dl dataset upload-assembled`.',
     'Create or select a reconciliation model with `dl check-model`, then train or add reviewed rules.',
     'Build RuleForest with `dl rule-forest build` before execution.',
-    'Before production runs, configure an alert channel with `dl alerts upsert` and verify it with `dl alerts test`.',
+    'Before production runs, inspect `dl alerts types`, configure an alert channel, and verify it with `dl alerts test`.',
+    'For Slack, read the incoming webhook from an environment variable and run `dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH`.',
     'After a run, inspect both incidents and alert deliveries with `dl incidents task` and `dl alerts deliveries`.',
     'Never paste secrets into prompts; read `DRIFTLEDGER_TOKEN` from the environment.',
     '```',
@@ -646,7 +687,9 @@ Common commands:
   dl run submit --body-file run.json
   dl run run --task <taskId>
   dl incidents list
+  dl alerts types
   dl alerts upsert --body-file alert-email-channel.json
+  dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
   dl alerts list
   dl alerts test --channel <channelId>
   dl alerts deliveries --task <taskId>

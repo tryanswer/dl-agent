@@ -22,7 +22,9 @@ dl rule validate --workspace <spId> --body-file examples/body-files/rule.json
 dl rule add --workspace <spId> --body-file examples/body-files/rule.json
 dl rule-forest build --workspace <spId>
 dl rule-forest status --workspace <spId>
+dl alerts types
 dl alerts upsert --workspace <spId> --body-file examples/body-files/alert-email-channel.json
+dl alerts slack --workspace <spId> --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
 dl alerts test --workspace <spId> --channel <channelId>
 dl run submit --workspace <spId> --body-file examples/body-files/run.json
 dl run run --workspace <spId> --task <taskId>

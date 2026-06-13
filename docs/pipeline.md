@@ -21,7 +21,7 @@ tokens or private data into prompts.
 | Train rules | `dl infer-task submit`, `dl infer-task progress` | clean assembled training dataset | generated rule candidates |
 | Create reviewed rule | `dl rule types`, `dl rule validate`, `dl rule add` | rule payload or natural-language draft converted to DSL | rule id |
 | Compile rules | `dl rule-forest build`, `dl rule-forest status` | workspace rules | compiled RuleForest status |
-| Configure alerts | `dl alerts upsert`, `dl alerts test` | email or webhook channel payload | channel id and test delivery |
+| Configure alerts | `dl alerts types`, `dl alerts upsert`, `dl alerts slack`, `dl alerts test` | email, Slack, or webhook channel config | channel id and test delivery |
 | Execute check | `dl run submit`, `dl run run` | assembled test/anomaly dataset | execution task id |
 | Review closure | `dl incidents task`, `dl alerts deliveries` | execution task id | readable incidents and delivery logs |
 

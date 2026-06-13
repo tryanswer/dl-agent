@@ -102,13 +102,19 @@ dl incidents actions --workspace <spId> --incident <incidentId>
 
 ## Alerts
 
-Alert channels notify users when execution opens incidents. Use email for the
-default notification path and webhook for ChatOps, workflow automation, or internal
-incident routers.
+Alert channels notify users when execution opens incidents. Use `dl alerts types`
+to discover required fields before creating a channel. For Slack, keep the
+incoming webhook URL in an environment variable such as `SLACK_WEBHOOK_URL`.
 
 ```bash
+dl alerts types
 dl alerts upsert --workspace <spId> --body-file examples/body-files/alert-email-channel.json
+dl alerts upsert --workspace <spId> --body-file examples/body-files/alert-slack-channel.json
+dl alerts slack --workspace <spId> --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
 dl alerts upsert --workspace <spId> --body-file examples/body-files/alert-webhook-channel.json
+dl alerts discord --workspace <spId> --webhook-url "$DISCORD_WEBHOOK_URL" --min-severity HIGH
+dl alerts teams --workspace <spId> --webhook-url "$TEAMS_WEBHOOK_URL" --min-severity HIGH
+dl alerts telegram --workspace <spId> --bot-token "$TELEGRAM_BOT_TOKEN" --chat-id "$TELEGRAM_CHAT_ID"
 dl alerts list --workspace <spId>
 dl alerts enable --workspace <spId> --channel <channelId>
 dl alerts disable --workspace <spId> --channel <channelId>

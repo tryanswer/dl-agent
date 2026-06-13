@@ -53,8 +53,8 @@ unless they need a non-default workspace. Use `--workspace <spId>` or
    `dl infer-task progress`.
 10. Validate reviewed rules with `dl rule validate --body-file ...`, then add
     them and build the workspace RuleForest with `dl rule-forest build`.
-11. Configure at least one alert channel with `dl alerts upsert`, then verify it
-   with `dl alerts test` before production runs.
+11. Inspect alert integrations with `dl alerts types`, configure at least one
+    alert channel, then verify it with `dl alerts test` before production runs.
 12. Submit and run a task, then inspect result indexes, incidents, and alert
     deliveries.
 
@@ -77,7 +77,9 @@ dl rule types
 dl rule validate --body-file examples/body-files/rule.json
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
+dl alerts types
 dl alerts upsert --body-file examples/body-files/alert-email-channel.json
+dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
 dl alerts test --channel <channelId>
 dl run submit --body-file examples/body-files/run.json
 dl run run --task <taskId>
@@ -111,6 +113,9 @@ Only draft rules after table metadata and field metadata exist.
   raw CSV requires metadata, source binding, and assembly first.
 - When the checked-out `dl-agent` repository is available, use
   `docs/pipeline.md` and `docs/input-data.md` for detailed formats.
+- For Slack, discover the channel schema with `dl alerts types`, read the
+  incoming webhook from `SLACK_WEBHOOK_URL`, and configure with
+  `dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH`.
 - Never write tokens, cookies, raw accounts, or company datasets into generated
   docs or prompts.
 - Never write real alert recipients, webhook URLs, or webhook secrets into

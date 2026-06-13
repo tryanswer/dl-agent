@@ -1,0 +1,7 @@
+{
+  "displayName": "Slack incident alerts",
+  "channelType": "SLACK",
+  "enabled": true,
+  "minSeverity": "HIGH",
+  "webhookUrl": "https://hooks.slack.com/services/T00000000/B00000000/REPLACE_WITH_SLACK_WEBHOOK"
+}

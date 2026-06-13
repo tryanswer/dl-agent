@@ -13,6 +13,7 @@ Rules:
 - Workspace defaults to `Default`; use `--workspace <spId>` only when the user specifies another workspace.
 - Never paste tokens into prompts or committed files.
 - Configure alert channels before production runs and check delivery logs after incidents.
+- For Slack alerts, read the incoming webhook from `SLACK_WEBHOOK_URL` and use `dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH`.
 - Convert natural-language rule requests into rule DSL from existing metadata, then run `dl rule validate` before saving.
 - Use `DRIFTLEDGER_TOKEN`, `DRIFTLEDGER_API_URL`, and `DRIFTLEDGER_WORKSPACE_ID` for hosted or sandboxed sessions.
 
@@ -43,7 +44,9 @@ dl infer-task progress --task <inferTaskId>
 dl rule validate --body-file examples/body-files/rule.json
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
+dl alerts types
 dl alerts upsert --body-file examples/body-files/alert-email-channel.json
+dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
 dl alerts test --channel <channelId>
 dl run submit --body-file examples/body-files/run.json
 dl run run --task <taskId>

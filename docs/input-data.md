@@ -98,6 +98,7 @@ placeholders, and pass them with `--body-file`.
 | `rule.json` | saves a reviewed executable rule | `modelId`, `modelVersion`, `ruleType`, `ruleContent` |
 | `run.json` | executes checks | `datasetId`, `riskModelId`, `ruleScope`, `selectedRuleIds` |
 | `alert-email-channel.json` | email notification channel | `channelType`, `recipients`, `minSeverity` |
+| `alert-slack-channel.json` | Slack incoming webhook channel | `channelType`, `webhookUrl`, `minSeverity` |
 | `alert-webhook-channel.json` | webhook notification channel | `channelType`, `webhookUrl`, `webhookSecret`, `minSeverity` |
 
 ## Reconciliation Model Relation Fixture

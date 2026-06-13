@@ -203,7 +203,9 @@ dl rule validate --body-file examples/body-files/rule.json
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
 dl rule-forest status
+dl alerts types
 dl alerts upsert --body-file examples/body-files/alert-email-channel.json
+dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
 dl alerts test --channel <channelId>
 dl run submit --body-file examples/body-files/run.json
 dl run run --task <taskId>
@@ -221,7 +223,9 @@ Notes:
 - Natural-language rules must be converted from existing metadata fields into
   valid rule DSL, then checked with `dl rule validate` before saving.
 - Rule changes should be compiled with `dl rule-forest build` before execution.
-- Production runs should configure email or webhook alerts before use.
+- Production runs should configure email, Slack, or webhook alerts before use.
+- Do not commit Slack incoming webhook URLs. Pass them through environment
+  variables such as `SLACK_WEBHOOK_URL`.
 
 ## Concepts
 

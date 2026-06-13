@@ -12,6 +12,7 @@ Rules:
 - Use `skills/driftledger-incident-review` after a run creates incidents or alert deliveries.
 - Workspace defaults to `Default`; use `--workspace <spId>` only when the user specifies another workspace.
 - Configure alert channels before production runs and check delivery logs after incidents.
+- For Slack alerts, read the incoming webhook from `SLACK_WEBHOOK_URL` and use `dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH`.
 - Convert natural-language rule requests into rule DSL from existing metadata, then run `dl rule validate` before saving.
 - Never put tokens, accounts, or raw company data in prompts or repository files.
 - Use environment variables when the runtime cannot write `~/.driftledger/config.json`.
@@ -38,7 +39,9 @@ dl infer-task progress --task <inferTaskId>
 dl rule validate --body-file examples/body-files/rule.json
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
+dl alerts types
 dl alerts upsert --body-file examples/body-files/alert-email-channel.json
+dl alerts slack --webhook-url "$SLACK_WEBHOOK_URL" --min-severity HIGH
 dl alerts test --channel <channelId>
 dl run submit --body-file examples/body-files/run.json
 dl run run --task <taskId>
