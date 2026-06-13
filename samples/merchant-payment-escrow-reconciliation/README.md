@@ -48,6 +48,9 @@ phone numbers, addresses, or identity documents.
 - `datasets/test-with-anomaly.jsonl`: four anomaly-only records for incident verification.
 - `manifest.json`: generation metadata, join keys, counts, and privacy notes.
 
+See `../../docs/input-data.md` for the assembled JSONL record shape, raw CSV
+rules, body-file payloads, and model relation fixture fields.
+
 ## Controlled Anomalies
 
 `datasets/test-with-anomaly.jsonl` contains only four success-chain records

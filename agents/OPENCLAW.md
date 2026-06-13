@@ -1,9 +1,9 @@
 # DriftLedger Agent Contract for OpenClaw
 
-Use `dl` for DriftLedger reconciliation workflows. `driftledger` is the equivalent long command.
+Use `dl` for DriftLedger reconciliation workflows. `driftledger` may exist as a compatibility alias, but examples and generated commands must use `dl`.
 
 Rules:
-- If `dl` is missing, install it first: `npm install -g @driftledger/cli`.
+- If `dl` is missing, install it first: `curl -fsSL https://driftledger.fatclaw.com/install.sh | bash`.
 - Run `dl doctor` and inspect JSON before making changes.
 - Verify auth with `dl auth verify` before write operations.
 - Prefer `--body-file` for metadata, source bindings, reconciliation models, rules, assembly tasks, and execution tasks.
@@ -12,6 +12,7 @@ Rules:
 - Use `skills/driftledger-incident-review` after a run creates incidents or alert deliveries.
 - Workspace defaults to `Default`; use `--workspace <spId>` only when the user specifies another workspace.
 - Configure alert channels before production runs and check delivery logs after incidents.
+- Convert natural-language rule requests into rule DSL from existing metadata, then run `dl rule validate` before saving.
 - Never put tokens, accounts, or raw company data in prompts or repository files.
 - Use environment variables when the runtime cannot write `~/.driftledger/config.json`.
 
@@ -26,7 +27,7 @@ export DRIFTLEDGER_WORKSPACE_ID="Default"
 Short path:
 
 ```bash
-command -v dl >/dev/null || npm install -g @driftledger/cli
+command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
 dl doctor
 dl auth verify
 dl dataset create-assembled --display-name merchant-payment-escrow
@@ -34,6 +35,7 @@ dl dataset upload-assembled --dataset <datasetId> --file samples/merchant-paymen
 dl check-model create --body-file examples/body-files/check-model.json
 dl infer-task submit --body-file examples/body-files/infer-task.json
 dl infer-task progress --task <inferTaskId>
+dl rule validate --body-file examples/body-files/rule.json
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
 dl alerts upsert --body-file examples/body-files/alert-email-channel.json

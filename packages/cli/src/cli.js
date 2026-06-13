@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const {spawn} = require('node:child_process');
 const {
   CONFIG_PATH,
   DEFAULT_API_URL,
@@ -8,6 +9,7 @@ const {
   agentInstruction,
   buildDemoPullPlan,
   buildEndpoint,
+  buildWebLoginPlan,
   extractAuthToken,
   loadStoredConfig,
   parseArgv,
@@ -49,6 +51,10 @@ async function main(argv = process.argv.slice(2), io = process) {
 
     if (scope === 'demo' && (action === 'pull' || action === 'download')) {
       return handleDemoPull(flags, io);
+    }
+
+    if (scope === 'auth' && action === 'login' && flags.web) {
+      return handleWebLogin(flags, runtime, io);
     }
 
     if (scope === 'agent' && action === 'init') {
@@ -162,6 +168,35 @@ async function handleDemoPull(flags, io) {
     files,
     commands: plan.commands,
   });
+}
+
+function handleWebLogin(flags, runtime, io) {
+  const plan = buildWebLoginPlan({flags, env: io.env, runtime});
+  let opened = false;
+
+  if (plan.open) {
+    opened = openBrowser(plan.loginUrl);
+  }
+
+  return writeJson(io, {...plan, opened});
+}
+
+function openBrowser(url) {
+  const command = process.platform === 'darwin'
+    ? 'open'
+    : process.platform === 'win32'
+      ? 'cmd'
+      : 'xdg-open';
+  const args = process.platform === 'win32' ? ['/c', 'start', '', url] : [url];
+
+  try {
+    const child = spawn(command, args, {stdio: 'ignore', detached: true});
+    child.on('error', () => {});
+    child.unref();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function requestJson(runtime, endpoint, flags) {

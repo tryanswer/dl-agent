@@ -1,6 +1,8 @@
 # DriftLedger CLI Commands
 
 All normal responses are JSON on stdout. Errors are JSON on stderr with `ok:false`.
+Use `docs/pipeline.md` for command order and `docs/input-data.md` for accepted
+input file formats.
 
 ## Runtime Context
 
@@ -10,6 +12,7 @@ dl version
 dl config get
 dl config set --api-url <url> --token <jwt> --workspace <spId>
 dl auth login --email <email> --password <password>
+dl auth login --web --web-url https://driftledger.fatclaw.com
 dl auth verify
 dl auth refresh
 ```
@@ -70,12 +73,18 @@ dl infer-task status --workspace <spId> --task <inferTaskId>
 dl infer-task progress --workspace <spId> --task <inferTaskId>
 dl infer-task cancel --workspace <spId> --task <inferTaskId>
 dl infer-task reset --workspace <spId> --task <inferTaskId>
+dl rule types
+dl rule validate --workspace <spId> --body-file examples/body-files/rule.json
 dl rule add --workspace <spId> --body-file examples/body-files/rule.json
 dl rule list --workspace <spId>
 dl rule get --workspace <spId> --id <ruleId>
 dl rule enable --workspace <spId> --id <ruleId>
 dl rule disable --workspace <spId> --id <ruleId>
 ```
+
+For natural-language rule creation, first inspect metadata tables and fields,
+then convert the request into rule DSL with exact `table#field` references.
+Validate the draft before saving it.
 
 ## RuleForest, Runs, Incidents
 

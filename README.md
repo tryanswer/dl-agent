@@ -13,6 +13,10 @@
   ·
   <a href="docs/workflows.md">Workflows</a>
   ·
+  <a href="docs/pipeline.md">Pipeline</a>
+  ·
+  <a href="docs/input-data.md">Input Data</a>
+  ·
   <a href="docs/commands.md">Commands</a>
   ·
   <a href="docs/publishing.md">Publishing</a>
@@ -41,14 +45,14 @@ dl auth login --email you@example.com --password "<password>"
 dl doctor
 ```
 
-npm install:
+Browser login entrypoint:
 
 ```bash
-npm install -g @driftledger/cli
-dl config set --api-url https://driftledger.fatclaw.com
-dl auth login --email you@example.com --password "<password>"
-dl doctor
+dl auth login --web --web-url https://driftledger.fatclaw.com
 ```
+
+This opens the DriftLedger login page. For headless agents, use API login or
+set `DRIFTLEDGER_TOKEN`; the browser flow does not capture a CLI token yet.
 
 Local development install:
 
@@ -61,7 +65,8 @@ dl config set --api-url http://localhost:8088
 dl doctor
 ```
 
-`dl` is the short command. `driftledger` remains available as the long alias.
+Use `dl` in docs, scripts, and agent instructions. `driftledger` remains a
+compatibility alias for older installs.
 
 ## Agent Setup
 
@@ -194,6 +199,7 @@ dl check-model create --body-file examples/body-files/check-model.json
 dl infer-task submit --body-file examples/body-files/infer-task.json
 dl infer-task progress --task <inferTaskId>
 dl rule types
+dl rule validate --body-file examples/body-files/rule.json
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
 dl rule-forest status
@@ -207,9 +213,13 @@ dl alerts deliveries --task <taskId>
 
 Notes:
 
+- See `docs/pipeline.md` for the full ID handoff between commands.
+- See `docs/input-data.md` for assembled JSONL, raw CSV, and body-file formats.
 - Field `types` in metadata are optional. If provided, use only values returned
   by `dl metadata col-types`.
 - Manual rule payloads must use a `ruleType` returned by `dl rule types`.
+- Natural-language rules must be converted from existing metadata fields into
+  valid rule DSL, then checked with `dl rule validate` before saving.
 - Rule changes should be compiled with `dl rule-forest build` before execution.
 - MVP runs should configure email or webhook alerts before production use.
 
@@ -244,6 +254,8 @@ read company fixtures or sibling repositories.
 
 ## More Documentation
 
+- `docs/pipeline.md`: end-to-end command pipeline and ID handoff.
+- `docs/input-data.md`: assembled JSONL, raw CSV, body-file, and rule input formats.
 - `docs/workflows.md`: assembled-data and raw-table workflow details.
 - `docs/commands.md`: command groups, aliases, and backend endpoints.
 - `samples/merchant-payment-escrow-reconciliation/README.md`: demo scenario,

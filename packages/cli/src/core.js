@@ -313,6 +313,7 @@ function buildEndpoint(positionals, flags = {}, runtime = {}) {
 
   if (scope === 'rule' || scope === 'rules') {
     if (action === 'types') return {method: 'GET', path: '/api/v1/rule/types'};
+    if (action === 'validate') return {method: 'POST', path: `/api/v1/rule/validate/${workspace()}`};
     if (action === 'add' || action === 'create') return {method: 'POST', path: `/api/v1/rule/add/${workspace()}`};
     if (action === 'update') return {method: 'PUT', path: `/api/v1/rule/update/${workspace()}`};
     if (action === 'list') {
@@ -457,6 +458,29 @@ function buildDemoPullPlan({flags = {}, env = process.env} = {}) {
   };
 }
 
+function buildWebLoginPlan({flags = {}, env = process.env, runtime = {}} = {}) {
+  const webUrl = stripTrailingSlash(firstPresent(
+    flags.webUrl,
+    env.DRIFTLEDGER_WEB_URL,
+    runtime.webUrl,
+    runtime.apiUrl,
+    DEFAULT_API_URL,
+  ));
+
+  return {
+    ok: true,
+    mode: 'web',
+    loginUrl: `${webUrl}/login?source=dl-agent`,
+    open: flags.open !== false,
+    tokenCapture: false,
+    next: [
+      'Complete login in the browser.',
+      'For non-interactive agents, use `dl auth login --email <email> --password <password>` or set DRIFTLEDGER_TOKEN.',
+      'Run `dl auth verify` after token configuration.',
+    ],
+  };
+}
+
 function expandHome(value) {
   const text = String(value);
   if (text === '~') return os.homedir();
@@ -534,7 +558,7 @@ function agentInstruction(agent, config = {}) {
     '',
     'Install:',
     '```bash',
-    'command -v dl >/dev/null || npm install -g @driftledger/cli',
+    'command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash',
     `dl config set --api-url ${apiUrl}`,
     ...workspaceConfigCommand,
     'dl auth login --email <email> --password <password>',
@@ -562,8 +586,9 @@ function agentInstruction(agent, config = {}) {
     `Recommended ${instructionFile} block:`,
     '```md',
     '## DriftLedger',
-    'Use `dl` for reconciliation workflows. `driftledger` is the equivalent long command.',
-    'If `dl` is missing, install it with `npm install -g @driftledger/cli` before DriftLedger commands.',
+    'Use `dl` for reconciliation workflows. `driftledger` may exist as a compatibility alias, but examples and generated commands must use `dl`.',
+    'If `dl` is missing, install it with `curl -fsSL https://driftledger.fatclaw.com/install.sh | bash` before DriftLedger commands.',
+    'Classify the user input first: assembled JSONL can be uploaded directly; raw CSV needs metadata, source binding, and assembly.',
     'If the runtime supports skills and `skills/driftledger-cli` is installed, use it for the full install-to-run workflow.',
     'If `skills/driftledger-incident-review` is installed, use it after a run creates incidents or alert deliveries.',
     'Prefer JSON output and pass data through files instead of long inline payloads.',
@@ -571,6 +596,7 @@ function agentInstruction(agent, config = {}) {
     'For the public demo, run `dl demo pull` and use the downloaded JSONL paths from the command output.',
     'For metadata field `types`, prefer omission; if constrained hints are needed, use only values from `dl metadata col-types`.',
     'For manual rule `ruleType`, use only values from `dl rule types`.',
+    'For natural-language rules, derive DSL only from registered metadata fields, run `dl rule validate --body-file <rule.json>`, show the validated DSL, then save with `dl rule add`.',
     'For raw exports, upload CSV with `dl dataset upload`, then run `dl assembly submit` and `dl assembly run`.',
     'For preassembled data, upload JSONL with `dl dataset upload-assembled`.',
     'Create or select a reconciliation model with `dl check-model`, then train or add reviewed rules.',
@@ -591,39 +617,41 @@ Usage:
   dl dataset upload --dataset <datasetId> --file payment_order.csv
   dl incidents list
 
-Long-form command:
-  driftledger demo pull
-  driftledger demo pull --out ./driftledger-demo
-  driftledger config set --api-url <url> --token <jwt>
-  driftledger config set --workspace <spId>
-  driftledger auth login --email <email> --password <password>
-  driftledger workspace create --name "Default"
-  driftledger metadata col-types
-  driftledger metadata upsert --body-file meta.json
-  driftledger data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
-  driftledger source-binding upsert --body-file binding.json
-  driftledger dataset create-raw --display-name payment-order --binding-id <bindingId>
-  driftledger dataset upload --dataset <datasetId> --file payment_order.csv
-  driftledger assembly submit --body-file assembly.json
-  driftledger assembly run --task <assemblyTaskId>
-  driftledger dataset create-assembled --display-name assembled
-  driftledger dataset upload-assembled --dataset <datasetId> --file assembled.jsonl
-  driftledger check-model create --body-file check-model.json
-  driftledger infer-task submit --body-file infer-task.json
-  driftledger infer-task progress --task <inferTaskId>
-  driftledger rule types
-  driftledger rule add --body-file rule.json
-  driftledger rule-forest build
-  driftledger rule-forest status
-  driftledger run submit --body-file run.json
-  driftledger run run --task <taskId>
-  driftledger incidents list
-  driftledger alerts upsert --body-file alert-email-channel.json
-  driftledger alerts list
-  driftledger alerts test --channel <channelId>
-  driftledger alerts deliveries --task <taskId>
-  driftledger agent init codex|claude|openclaw|generic
-  driftledger api request GET /api/v1/token/verify
+Common commands:
+  dl demo pull
+  dl demo pull --out ./driftledger-demo
+  dl config set --api-url <url> --token <jwt>
+  dl config set --workspace <spId>
+  dl auth login --email <email> --password <password>
+  dl auth login --web --web-url https://driftledger.fatclaw.com
+  dl workspace create --name "Default"
+  dl metadata col-types
+  dl metadata upsert --body-file meta.json
+  dl data-source upsert --display-name "Payment Order CSV" --type CSV_UPLOAD
+  dl source-binding upsert --body-file binding.json
+  dl dataset create-raw --display-name payment-order --binding-id <bindingId>
+  dl dataset upload --dataset <datasetId> --file payment_order.csv
+  dl assembly submit --body-file assembly.json
+  dl assembly run --task <assemblyTaskId>
+  dl dataset create-assembled --display-name assembled
+  dl dataset upload-assembled --dataset <datasetId> --file assembled.jsonl
+  dl check-model create --body-file check-model.json
+  dl infer-task submit --body-file infer-task.json
+  dl infer-task progress --task <inferTaskId>
+  dl rule types
+  dl rule validate --body-file rule.json
+  dl rule add --body-file rule.json
+  dl rule-forest build
+  dl rule-forest status
+  dl run submit --body-file run.json
+  dl run run --task <taskId>
+  dl incidents list
+  dl alerts upsert --body-file alert-email-channel.json
+  dl alerts list
+  dl alerts test --channel <channelId>
+  dl alerts deliveries --task <taskId>
+  dl agent init codex|claude|openclaw|generic
+  dl api request GET /api/v1/token/verify
 `;
 
 module.exports = {
@@ -638,6 +666,7 @@ module.exports = {
   asArray,
   buildDemoPullPlan,
   buildEndpoint,
+  buildWebLoginPlan,
   extractAuthToken,
   loadStoredConfig,
   parseArgv,

@@ -1,13 +1,19 @@
 # Publishing
 
-## npm
+## CLI Package
 
-The publishable package lives in `packages/cli`.
+The installable CLI package lives in `packages/cli`. The hosted installer can
+pack and install it from the public GitHub archive even before npm publication.
 
 ```bash
 npm --workspace @driftledger/cli test
 npm run verify:samples
 npm --workspace @driftledger/cli pack --dry-run
+```
+
+Optional npm publication, after package ownership is ready:
+
+```bash
 npm publish --workspace @driftledger/cli --access public
 ```
 
@@ -22,7 +28,8 @@ https://driftledger.fatclaw.com/install.sh
 Smoke test:
 
 ```bash
-DRIFTLEDGER_CLI_PACKAGE=./packages/cli npm run cli -- doctor
+DRIFTLEDGER_CLI_PACKAGE=./packages/cli bash scripts/install.sh
+dl doctor
 curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
 ```
 

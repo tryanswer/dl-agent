@@ -5,19 +5,20 @@ Agent-friendly command line access to DriftLedger.
 ## Install
 
 ```bash
-command -v dl >/dev/null || npm install -g @driftledger/cli
+command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
 dl doctor
 dl config set --api-url https://driftledger.fatclaw.com
 dl auth login --email you@example.com --password '<password>'
 ```
 
-Manual npm install:
+Browser login entrypoint:
 
 ```bash
-npm install -g @driftledger/cli
-dl config set --api-url https://driftledger.fatclaw.com
-dl auth login --email you@example.com --password '<password>'
+dl auth login --web --web-url https://driftledger.fatclaw.com
 ```
+
+For headless agents, use API login or set `DRIFTLEDGER_TOKEN`; the browser flow
+does not capture a CLI token yet.
 
 For local development from this repository:
 
@@ -115,6 +116,11 @@ Field `types` in metadata are optional. If an agent provides them, use only
 values returned by `dl metadata col-types`, not SQL or file-parser types such as
 `STRING`, `DECIMAL`, or `DATETIME`.
 
+See repository docs for detailed formats:
+
+- `docs/pipeline.md`: command sequence and ID handoff.
+- `docs/input-data.md`: assembled JSONL, raw CSV, body-file, and rule formats.
+
 4. Create a reconciliation model, train or add rules, build RuleForest, configure
    alerts, run checks, and inspect incidents:
 
@@ -123,6 +129,7 @@ dl check-model create --body-file check-model.json
 dl infer-task submit --body-file infer-task.json
 dl infer-task progress --task <inferTaskId>
 dl rule types
+dl rule validate --body-file rule.json
 dl rule add --body-file rule.json
 dl rule-forest build
 dl alerts upsert --body-file alert-email-channel.json
@@ -133,7 +140,9 @@ dl incidents task --task <taskId>
 dl alerts deliveries --task <taskId>
 ```
 
-Manual rule payloads must use a `ruleType` returned by `dl rule types`.
+Manual and natural-language rule payloads must use a `ruleType` returned by
+`dl rule types`. Natural-language rules must be converted from existing
+metadata fields into rule DSL and pass `dl rule validate` before saving.
 
 ## Minimum Flow
 
@@ -155,6 +164,7 @@ dl check-model create --body-file check-model.json
 dl infer-task submit --body-file infer-task.json
 dl infer-task progress --task <inferTaskId>
 dl rule types
+dl rule validate --body-file rule.json
 dl rule add --body-file rule.json
 dl rule-forest build
 dl alerts upsert --body-file alert-email-channel.json
@@ -171,4 +181,5 @@ assembled reconciliation data uses JSONL. Alert channels currently support email
 and webhook delivery, with delivery logs available for both test sends and
 incident notifications.
 
-`driftledger` remains available as the long command alias.
+Use `dl` in scripts and agent instructions. `driftledger` remains available as a
+compatibility alias for older installs.

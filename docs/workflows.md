@@ -1,5 +1,9 @@
 # DriftLedger Agent Workflows
 
+For the complete command pipeline and ID handoff, see `docs/pipeline.md`.
+For accepted assembled JSONL, raw CSV, body-file, and rule formats, see
+`docs/input-data.md`.
+
 ## Assembled-Data Path
 
 Use this when another process already joined related source rows into reconciliation records.
@@ -14,6 +18,7 @@ dl dataset upload-assembled --workspace <spId> --dataset <anomalyDatasetId> --fi
 dl check-model create --workspace <spId> --body-file examples/body-files/check-model.json
 dl infer-task submit --workspace <spId> --body-file examples/body-files/infer-task.json
 dl infer-task progress --workspace <spId> --task <inferTaskId>
+dl rule validate --workspace <spId> --body-file examples/body-files/rule.json
 dl rule add --workspace <spId> --body-file examples/body-files/rule.json
 dl rule-forest build --workspace <spId>
 dl rule-forest status --workspace <spId>
@@ -40,6 +45,20 @@ dl assembly run --workspace <spId> --task <assemblyTaskId>
 ```
 
 The assembly result is an assembled dataset. Use that dataset ID for rule training and execution.
+
+## Natural-Language Rules
+
+Use natural language as input only. The saved rule must still be legal rule DSL:
+
+```bash
+dl metadata tables --workspace <spId>
+dl metadata fields --workspace <spId> --table <metaTableId>
+dl rule types
+dl rule validate --workspace <spId> --body-file draft-rule.json
+dl rule add --workspace <spId> --body-file draft-rule.json
+```
+
+Only use table and field references returned by metadata commands.
 
 ## Privacy Guard
 

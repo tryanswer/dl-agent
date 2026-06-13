@@ -3,7 +3,7 @@
   "title": "cleared merchant net amount settles consistently",
   "modelId": "<riskModelCode>",
   "modelVersion": "<riskModelVersion>",
-  "ruleType": "LOGIC",
+  "ruleType": "EQUAL",
   "ruleContent": "driftledger.clearing_record#net_amount = driftledger.settlement_record#settlement_amount WHERE driftledger.payment_order#payment_status = 'PAID' AND driftledger.clearing_record#clearing_status = 'CLEARED' AND driftledger.settlement_record#settlement_status = 'SETTLED'",
   "state": "ONLINE",
   "generateType": "CUSTOM",

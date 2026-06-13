@@ -1,6 +1,9 @@
 # Scripts
 
-- `install.sh`: hosted installer for `@driftledger/cli`.
+- `install.sh`: hosted installer for the `dl` CLI. By default it downloads the
+  public `dl-agent` GitHub archive, packs `packages/cli`, and installs the
+  tarball globally. Set `DRIFTLEDGER_CLI_PACKAGE=./packages/cli` for local
+  development.
 - `sync-demo-assets.mjs`: deterministic synthetic sample generator for
   `samples/merchant-payment-escrow-reconciliation`; it does not read company
   fixtures or sibling repositories.

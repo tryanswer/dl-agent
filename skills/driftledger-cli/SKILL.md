@@ -10,7 +10,7 @@ description: Use when an agent needs to operate DriftLedger through shell comman
 Always check whether the CLI exists before using DriftLedger:
 
 ```bash
-command -v dl >/dev/null || npm install -g @driftledger/cli
+command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
 dl doctor
 ```
 
@@ -51,8 +51,8 @@ unless they need a non-default workspace. Use `--workspace <spId>` or
 8. Create or select a reconciliation model.
 9. Submit rule training with `dl infer-task submit --body-file ...`, then poll
    `dl infer-task progress`.
-10. Add reviewed rules and build the workspace RuleForest with
-   `dl rule-forest build`.
+10. Validate reviewed rules with `dl rule validate --body-file ...`, then add
+    them and build the workspace RuleForest with `dl rule-forest build`.
 11. Configure at least one alert channel with `dl alerts upsert`, then verify it
    with `dl alerts test` before production runs.
 12. Submit and run a task, then inspect result indexes, incidents, and alert
@@ -61,7 +61,7 @@ unless they need a non-default workspace. Use `--workspace <spId>` or
 ## Minimal Command Path
 
 ```bash
-command -v dl >/dev/null || npm install -g @driftledger/cli
+command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
 dl doctor
 dl config set --api-url https://driftledger.fatclaw.com
 dl auth login --email you@example.com --password "<password>"
@@ -74,6 +74,7 @@ dl check-model create --body-file examples/body-files/check-model.json
 dl infer-task submit --body-file examples/body-files/infer-task.json
 dl infer-task progress --task <inferTaskId>
 dl rule types
+dl rule validate --body-file examples/body-files/rule.json
 dl rule add --body-file examples/body-files/rule.json
 dl rule-forest build
 dl alerts upsert --body-file examples/body-files/alert-email-channel.json
@@ -84,12 +85,32 @@ dl incidents task --task <taskId>
 dl alerts deliveries --task <taskId>
 ```
 
+## Natural Language Rules
+
+Only draft rules after table metadata and field metadata exist.
+
+1. Inspect available references with `dl metadata tables` and
+   `dl metadata fields --table <metaTableId>`.
+2. Read allowed rule types with `dl rule types`.
+3. Convert the user's natural language into `ruleContent` using exact
+   `table#field` references from metadata. Do not invent table or field names.
+4. Choose `ruleType` only from the allowed rule types. Use `EQUAL` for equality
+   checks.
+5. Save the draft payload to a local JSON file and run
+   `dl rule validate --body-file <rule.json>`.
+6. Show the user the validated DSL and any validation errors. Save with
+   `dl rule add --body-file <rule.json>` only after validation passes.
+
 ## Command Contract
 
 - Treat stdout as machine-readable JSON.
 - Treat stderr JSON with `ok:false` as recoverable unless the error indicates
   missing auth or backend unavailability.
 - Put complex payloads in files and pass them with `--body-file`.
+- Classify input data before upload: assembled JSONL can be uploaded directly;
+  raw CSV requires metadata, source binding, and assembly first.
+- When the checked-out `dl-agent` repository is available, use
+  `docs/pipeline.md` and `docs/input-data.md` for detailed formats.
 - Never write tokens, cookies, raw accounts, or company datasets into generated
   docs or prompts.
 - Never write real alert recipients, webhook URLs, or webhook secrets into

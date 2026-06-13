@@ -6,6 +6,7 @@ const {
   agentInstruction,
   buildDemoPullPlan,
   buildEndpoint,
+  buildWebLoginPlan,
   DEFAULT_DEMO_SCENARIO,
   extractAuthToken,
   HELP,
@@ -88,6 +89,10 @@ test('buildEndpoint maps high-level CLI commands to backend atoms', () => {
   assert.deepEqual(buildEndpoint(['rule', 'types'], {workspace: 'sp_001'}), {
     method: 'GET',
     path: '/api/v1/rule/types',
+  });
+  assert.deepEqual(buildEndpoint(['rule', 'validate'], {workspace: 'sp_001'}), {
+    method: 'POST',
+    path: '/api/v1/rule/validate/sp_001',
   });
 });
 
@@ -176,8 +181,25 @@ test('buildDemoPullPlan prepares downloadable demo assets for installed CLI user
   assert.match(plan.commands.uploadAnomalyTest, /test-with-anomaly\.jsonl/);
 });
 
+test('buildWebLoginPlan prepares browser login without token capture', () => {
+  const plan = buildWebLoginPlan({
+    flags: {webUrl: 'https://driftledger.fatclaw.com', open: false},
+    env: {},
+    runtime: {apiUrl: 'https://api.example'},
+  });
+
+  assert.equal(plan.loginUrl, 'https://driftledger.fatclaw.com/login?source=dl-agent');
+  assert.equal(plan.open, false);
+  assert.equal(plan.tokenCapture, false);
+  assert.match(plan.next.join('\n'), /DRIFTLEDGER_TOKEN/);
+});
+
 test('help surfaces the CLI demo download entrypoint', () => {
   assert.match(HELP, /dl demo pull/);
+  assert.match(HELP, /rule validate/);
+  assert.match(HELP, /auth login --web/);
+  assert.doesNotMatch(HELP, /^  driftledger /m);
+  assert.doesNotMatch(HELP, /Long-form command/);
 });
 
 test('extractAuthToken reads AUTH_TOKEN from set-cookie headers', () => {
@@ -201,11 +223,13 @@ test('agentInstruction covers Codex, Claude, OpenClaw, and generic agent install
     assert.match(instruction, /DRIFTLEDGER_API_URL/);
     assert.match(instruction, /DRIFTLEDGER_TOKEN/);
     assert.match(instruction, /command -v dl/);
-    assert.match(instruction, /npm install -g @driftledger\/cli/);
+    assert.match(instruction, /curl -fsSL https:\/\/driftledger\.fatclaw\.com\/install\.sh \| bash/);
     assert.match(instruction, /dl config set --workspace sp_demo/);
+    assert.doesNotMatch(instruction, /^driftledger /m);
     assert.match(instruction, /skills\/driftledger-cli/);
     assert.match(instruction, /dl metadata col-types/);
     assert.match(instruction, /dl rule types/);
+    assert.match(instruction, /dl rule validate/);
     assert.match(instruction, /rule-forest build/);
     assert.match(instruction, /alerts test/);
   }
