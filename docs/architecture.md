@@ -5,7 +5,7 @@
 ## Packages
 
 - `packages/cli`: the CLI package installed by the hosted installer or from a local checkout.
-- `scripts/install.sh`: the hosted install script used by `https://driftledger.fatclaw.com/install.sh`.
+- `scripts/install.sh`: the hosted install script used by `https://driftledger-global.fatclaw.com/install.sh`.
 - `agents/`: reusable instruction contracts for Codex, Claude Code, OpenClaw, and generic shell agents.
 - `examples/`: small payload files agents can copy, edit, and pass through `--body-file`.
 - `samples/`: synthetic demo model and dataset assets for public tutorials.

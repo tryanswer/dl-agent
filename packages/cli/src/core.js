@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const DEFAULT_API_URL = 'http://localhost:8088';
+const DEFAULT_API_URL = 'https://driftledger-global.fatclaw.com';
 const DEFAULT_WORKSPACE = 'Default';
 const AUTH_COOKIE = 'AUTH_TOKEN';
 const CONFIG_DIR = path.join(os.homedir(), '.driftledger');
@@ -558,7 +558,7 @@ function agentInstruction(agent, config = {}) {
     '',
     'Install:',
     '```bash',
-    'command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash',
+    'command -v dl >/dev/null || curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash',
     `dl config set --api-url ${apiUrl}`,
     ...workspaceConfigCommand,
     'dl auth login --email <email> --password <password>',
@@ -587,7 +587,7 @@ function agentInstruction(agent, config = {}) {
     '```md',
     '## DriftLedger',
     'Use `dl` for reconciliation workflows. `driftledger` may exist as a compatibility alias, but examples and generated commands must use `dl`.',
-    'If `dl` is missing, install it with `curl -fsSL https://driftledger.fatclaw.com/install.sh | bash` before DriftLedger commands.',
+    'If `dl` is missing, install it with `curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash` before DriftLedger commands.',
     'Classify the user input first: assembled JSONL can be uploaded directly; raw CSV needs metadata, source binding, and assembly.',
     'If the runtime supports skills and `skills/driftledger-cli` is installed, use it for the full install-to-run workflow.',
     'If `skills/driftledger-incident-review` is installed, use it after a run creates incidents or alert deliveries.',
@@ -623,7 +623,7 @@ Common commands:
   dl config set --api-url <url> --token <jwt>
   dl config set --workspace <spId>
   dl auth login --email <email> --password <password>
-  dl auth login --web --web-url https://driftledger.fatclaw.com
+  dl auth login --web --web-url https://driftledger-global.fatclaw.com
   dl workspace create --name "Default"
   dl metadata col-types
   dl metadata upsert --body-file meta.json

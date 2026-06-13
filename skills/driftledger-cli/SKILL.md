@@ -10,7 +10,7 @@ description: Use when an agent needs to operate DriftLedger through shell comman
 Always check whether the CLI exists before using DriftLedger:
 
 ```bash
-command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
+command -v dl >/dev/null || curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash
 dl doctor
 ```
 
@@ -26,7 +26,7 @@ dl doctor
 Use environment variables when the agent cannot write local config:
 
 ```bash
-export DRIFTLEDGER_API_URL="https://driftledger.fatclaw.com"
+export DRIFTLEDGER_API_URL="https://driftledger-global.fatclaw.com"
 export DRIFTLEDGER_TOKEN="<jwt>"
 export DRIFTLEDGER_WORKSPACE_ID="Default"
 ```
@@ -61,9 +61,9 @@ unless they need a non-default workspace. Use `--workspace <spId>` or
 ## Minimal Command Path
 
 ```bash
-command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
+command -v dl >/dev/null || curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash
 dl doctor
-dl config set --api-url https://driftledger.fatclaw.com
+dl config set --api-url https://driftledger-global.fatclaw.com
 dl auth login --email you@example.com --password "<password>"
 dl workspace list
 dl demo pull

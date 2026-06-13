@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_API_URL="${DRIFTLEDGER_API_URL:-https://driftledger.fatclaw.com}"
+DEFAULT_API_URL="${DRIFTLEDGER_API_URL:-https://driftledger-global.fatclaw.com}"
 ARCHIVE_URL="${DRIFTLEDGER_AGENT_ARCHIVE_URL:-https://github.com/tryanswer/dl-agent/archive/refs/heads/main.tar.gz}"
 
 if ! command -v node >/dev/null 2>&1; then

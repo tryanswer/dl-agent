@@ -3,7 +3,7 @@
 Use `dl` for DriftLedger reconciliation workflows. `driftledger` may exist as a compatibility alias, but examples and generated commands must use `dl`.
 
 Rules:
-- If `dl` is missing, install it first: `curl -fsSL https://driftledger.fatclaw.com/install.sh | bash`.
+- If `dl` is missing, install it first: `curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash`.
 - Run `dl doctor` and inspect JSON before making changes.
 - Verify auth with `dl auth verify` before write operations.
 - Prefer `--body-file` for metadata, source bindings, reconciliation models, rules, assembly tasks, and execution tasks.
@@ -19,7 +19,7 @@ Rules:
 Environment:
 
 ```bash
-export DRIFTLEDGER_API_URL="https://driftledger.fatclaw.com"
+export DRIFTLEDGER_API_URL="https://driftledger-global.fatclaw.com"
 export DRIFTLEDGER_TOKEN="<jwt>"
 export DRIFTLEDGER_WORKSPACE_ID="Default"
 ```
@@ -27,7 +27,7 @@ export DRIFTLEDGER_WORKSPACE_ID="Default"
 Short path:
 
 ```bash
-command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
+command -v dl >/dev/null || curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash
 dl doctor
 dl auth verify
 dl dataset create-assembled --display-name merchant-payment-escrow

@@ -5,16 +5,16 @@ Agent-friendly command line access to DriftLedger.
 ## Install
 
 ```bash
-command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
+command -v dl >/dev/null || curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash
 dl doctor
-dl config set --api-url https://driftledger.fatclaw.com
+dl config set --api-url https://driftledger-global.fatclaw.com
 dl auth login --email you@example.com --password '<password>'
 ```
 
 Browser login entrypoint:
 
 ```bash
-dl auth login --web --web-url https://driftledger.fatclaw.com
+dl auth login --web --web-url https://driftledger-global.fatclaw.com
 ```
 
 For headless agents, use API login or set `DRIFTLEDGER_TOKEN`; the browser flow
@@ -60,7 +60,7 @@ Hosted or sandboxed agents can avoid local config files by using environment
 variables:
 
 ```bash
-export DRIFTLEDGER_API_URL="https://driftledger.fatclaw.com"
+export DRIFTLEDGER_API_URL="https://driftledger-global.fatclaw.com"
 export DRIFTLEDGER_TOKEN="<jwt>"
 export DRIFTLEDGER_WORKSPACE_ID="Default"
 ```

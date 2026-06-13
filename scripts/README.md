@@ -13,5 +13,5 @@
 Deploy target:
 
 ```text
-https://driftledger.fatclaw.com/install.sh
+https://driftledger-global.fatclaw.com/install.sh
 ```

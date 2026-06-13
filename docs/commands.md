@@ -12,7 +12,7 @@ dl version
 dl config get
 dl config set --api-url <url> --token <jwt> --workspace <spId>
 dl auth login --email <email> --password <password>
-dl auth login --web --web-url https://driftledger.fatclaw.com
+dl auth login --web --web-url https://driftledger-global.fatclaw.com
 dl auth verify
 dl auth refresh
 ```

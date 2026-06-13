@@ -29,7 +29,7 @@
   "bugs": {
     "url": "https://github.com/tryanswer/dl-agent/issues"
   },
-  "homepage": "https://driftledger.fatclaw.com/cli",
+  "homepage": "https://driftledger-global.fatclaw.com/cli",
   "engines": {
     "node": ">=20"
   }

@@ -8,7 +8,7 @@ tokens or private data into prompts.
 
 | Step | Command | Input | Output To Capture |
 | --- | --- | --- | --- |
-| Install CLI | `curl -fsSL https://driftledger.fatclaw.com/install.sh \| bash` | Node.js 20+ and npm | `dl` command |
+| Install CLI | `curl -fsSL https://driftledger-global.fatclaw.com/install.sh \| bash` | Node.js 20+ and npm | `dl` command |
 | Configure runtime | `dl config set --api-url <url>` | DriftLedger API URL | local config |
 | Authenticate | `dl auth login --email <email> --password <password>` | user credentials | saved auth token |
 | Select workspace | `dl workspace list` or `dl workspace create --name "Default"` | optional workspace name | workspace id, default is `Default` |

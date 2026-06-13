@@ -183,12 +183,12 @@ test('buildDemoPullPlan prepares downloadable demo assets for installed CLI user
 
 test('buildWebLoginPlan prepares browser login without token capture', () => {
   const plan = buildWebLoginPlan({
-    flags: {webUrl: 'https://driftledger.fatclaw.com', open: false},
+    flags: {webUrl: 'https://driftledger-global.fatclaw.com', open: false},
     env: {},
     runtime: {apiUrl: 'https://api.example'},
   });
 
-  assert.equal(plan.loginUrl, 'https://driftledger.fatclaw.com/login?source=dl-agent');
+  assert.equal(plan.loginUrl, 'https://driftledger-global.fatclaw.com/login?source=dl-agent');
   assert.equal(plan.open, false);
   assert.equal(plan.tokenCapture, false);
   assert.match(plan.next.join('\n'), /DRIFTLEDGER_TOKEN/);
@@ -214,7 +214,7 @@ test('extractAuthToken reads AUTH_TOKEN from set-cookie headers', () => {
 test('agentInstruction covers Codex, Claude, OpenClaw, and generic agent installs', () => {
   for (const agent of ['codex', 'claude', 'openclaw', 'generic']) {
     const instruction = agentInstruction(agent, {
-      apiUrl: 'https://driftledger.fatclaw.com',
+      apiUrl: 'https://driftledger-global.fatclaw.com',
       workspace: 'sp_demo',
     });
 
@@ -223,7 +223,7 @@ test('agentInstruction covers Codex, Claude, OpenClaw, and generic agent install
     assert.match(instruction, /DRIFTLEDGER_API_URL/);
     assert.match(instruction, /DRIFTLEDGER_TOKEN/);
     assert.match(instruction, /command -v dl/);
-    assert.match(instruction, /curl -fsSL https:\/\/driftledger\.fatclaw\.com\/install\.sh \| bash/);
+    assert.match(instruction, /curl -fsSL https:\/\/driftledger-global\.fatclaw\.com\/install\.sh \| bash/);
     assert.match(instruction, /dl config set --workspace sp_demo/);
     assert.doesNotMatch(instruction, /^driftledger /m);
     assert.match(instruction, /skills\/driftledger-cli/);
@@ -235,10 +235,16 @@ test('agentInstruction covers Codex, Claude, OpenClaw, and generic agent install
   }
 
   const defaultInstruction = agentInstruction('codex', {
-    apiUrl: 'https://driftledger.fatclaw.com',
+    apiUrl: 'https://driftledger-global.fatclaw.com',
   });
-  assert.match(defaultInstruction, /dl config set --api-url https:\/\/driftledger\.fatclaw\.com/);
+  assert.match(defaultInstruction, /dl config set --api-url https:\/\/driftledger-global\.fatclaw\.com/);
   assert.doesNotMatch(defaultInstruction, /--workspace Default/);
   assert.match(defaultInstruction, /DRIFTLEDGER_WORKSPACE_ID="Default"/);
   assert.match(defaultInstruction, /workspace is specified, `dl` uses `Default`/);
+});
+
+test('default runtime points to global hosted DriftLedger', () => {
+  const config = resolveRuntimeConfig({flags: {}, env: {}, stored: {}});
+
+  assert.equal(config.apiUrl, 'https://driftledger-global.fatclaw.com');
 });

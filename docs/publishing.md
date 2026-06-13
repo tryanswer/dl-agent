@@ -22,7 +22,7 @@ npm publish --workspace @driftledger/cli --access public
 The install script lives at `scripts/install.sh` and should be deployed to:
 
 ```text
-https://driftledger.fatclaw.com/install.sh
+https://driftledger-global.fatclaw.com/install.sh
 ```
 
 Smoke test:
@@ -30,7 +30,7 @@ Smoke test:
 ```bash
 DRIFTLEDGER_CLI_PACKAGE=./packages/cli bash scripts/install.sh
 dl doctor
-curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
+curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash
 ```
 
 ## GitHub

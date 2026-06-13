@@ -3,7 +3,7 @@
 Use `dl` for DriftLedger reconciliation workflows. `driftledger` may exist as a compatibility alias, but examples and generated commands must use `dl`.
 
 Rules:
-- If `dl` is missing, install it first: `curl -fsSL https://driftledger.fatclaw.com/install.sh | bash`.
+- If `dl` is missing, install it first: `curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash`.
 - Start with `dl doctor` before API-backed commands.
 - Verify auth with `dl auth verify` before write operations.
 - Keep payloads in JSON files and pass them with `--body-file`.
@@ -27,7 +27,7 @@ cp -R skills/driftledger-incident-review ~/.claude/skills/
 Common flow:
 
 ```bash
-command -v dl >/dev/null || curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
+command -v dl >/dev/null || curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash
 dl doctor
 dl auth verify
 dl workspace list

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://driftledger.fatclaw.com/cli">CLI Guide</a>
+  <a href="https://driftledger-global.fatclaw.com/cli">CLI Guide</a>
   ·
   <a href="docs/workflows.md">Workflows</a>
   ·
@@ -39,8 +39,8 @@ install CLI -> authenticate -> download demo or upload CSV/JSONL -> create model
 Hosted install:
 
 ```bash
-curl -fsSL https://driftledger.fatclaw.com/install.sh | bash
-dl config set --api-url https://driftledger.fatclaw.com
+curl -fsSL https://driftledger-global.fatclaw.com/install.sh | bash
+dl config set --api-url https://driftledger-global.fatclaw.com
 dl auth login --email you@example.com --password "<password>"
 dl doctor
 ```
@@ -48,7 +48,7 @@ dl doctor
 Browser login entrypoint:
 
 ```bash
-dl auth login --web --web-url https://driftledger.fatclaw.com
+dl auth login --web --web-url https://driftledger-global.fatclaw.com
 ```
 
 This opens the DriftLedger login page. For headless agents, use API login or
@@ -82,7 +82,7 @@ dl agent init generic --out AGENT.md
 Hosted or sandboxed agents can avoid local config writes:
 
 ```bash
-export DRIFTLEDGER_API_URL="https://driftledger.fatclaw.com"
+export DRIFTLEDGER_API_URL="https://driftledger-global.fatclaw.com"
 export DRIFTLEDGER_TOKEN="<jwt>"
 export DRIFTLEDGER_WORKSPACE_ID="Default"
 ```
