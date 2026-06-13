@@ -1,6 +1,6 @@
 # Input Data Formats
 
-DriftLedger MVP supports two user data shapes: assembled JSONL and raw CSV.
+DriftLedger currently supports two user data shapes: assembled JSONL and raw CSV.
 Both paths require metadata that names tables and fields before rules are
 created.
 

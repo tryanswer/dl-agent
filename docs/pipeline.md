@@ -1,6 +1,6 @@
 # DriftLedger Agent Pipeline
 
-This is the agent-facing MVP path. Each step produces IDs or artifacts that the
+This is the agent-facing end-to-end path. Each step produces IDs or artifacts that the
 next step consumes. Keep the IDs in a local note or payload file; do not paste
 tokens or private data into prompts.
 
@@ -28,7 +28,7 @@ tokens or private data into prompts.
 ## Choose A Data Path
 
 Use assembled JSONL when the user already has one record per business flow with
-related source rows grouped together. This skips assembly and is the fastest MVP
+related source rows grouped together. This skips assembly and is the fastest first-run
 path.
 
 Use raw CSV when the user has source-table exports. Register metadata first,
@@ -55,7 +55,7 @@ Agents should preserve these values between commands:
 
 ## Done Criteria
 
-An MVP run is complete only when all of these are visible in command output:
+An end-to-end run is complete only when all of these are visible in command output:
 
 - the dataset upload or assembly produced an assembled dataset;
 - at least one rule was validated, saved, and compiled into RuleForest;

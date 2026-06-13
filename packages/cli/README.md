@@ -71,7 +71,7 @@ non-default workspace.
 
 ## Use After Install
 
-Follow this sequence for a complete MVP run:
+Follow this sequence for a complete reconciliation run:
 
 1. Verify runtime and auth.
 

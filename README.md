@@ -26,7 +26,7 @@
 console. It packages the `dl` command, install guidance, reusable agent
 instructions, skills, request-body examples, and synthetic demo data.
 
-Use it for the MVP loop:
+Use it for the end-to-end reconciliation loop:
 
 ```text
 install CLI -> authenticate -> download demo or upload CSV/JSONL -> create model
@@ -156,7 +156,7 @@ Included data:
 The anomaly records keep join keys intact and only change checked field values,
 so incidents come from business mismatches rather than broken assembly.
 
-## MVP Run
+## Run a Reconciliation Check
 
 Start with authentication and workspace discovery:
 
@@ -221,7 +221,7 @@ Notes:
 - Natural-language rules must be converted from existing metadata fields into
   valid rule DSL, then checked with `dl rule validate` before saving.
 - Rule changes should be compiled with `dl rule-forest build` before execution.
-- MVP runs should configure email or webhook alerts before production use.
+- Production runs should configure email or webhook alerts before use.
 
 ## Concepts
 

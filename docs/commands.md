@@ -103,7 +103,7 @@ dl incidents actions --workspace <spId> --incident <incidentId>
 ## Alerts
 
 Alert channels notify users when execution opens incidents. Use email for the
-default MVP path and webhook for ChatOps, workflow automation, or internal
+default notification path and webhook for ChatOps, workflow automation, or internal
 incident routers.
 
 ```bash
